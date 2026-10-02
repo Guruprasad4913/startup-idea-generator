@@ -25,14 +25,16 @@ import {
   Building2,
   Award,
   Compass,
+  HelpCircle,
 } from "lucide-react";
 import { User as UserType } from "@/types";
 
 interface AuthPageProps {
   onLoginSuccess: (user: UserType) => void;
+  onOpenHelp?: () => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onOpenHelp }) => {
   const [authMode, setAuthMode] = useState<"signin" | "signup" | "admin">("signin");
 
   // Form fields
@@ -46,6 +48,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Password validation rules (for signup / setting password)
+  const passwordCriteria = {
+    hasMinLength: password.length >= 8,
+    hasUpper: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+
+  const criteriaMetCount = Object.values(passwordCriteria).filter(Boolean).length;
+  const isPasswordStrong = criteriaMetCount === 4;
+
+  const getStrengthInfo = () => {
+    if (password.length === 0) return { label: "Empty", color: "bg-slate-700", text: "text-slate-500" };
+    if (criteriaMetCount <= 1) return { label: "Weak", color: "bg-red-500", text: "text-red-400" };
+    if (criteriaMetCount === 2) return { label: "Fair", color: "bg-amber-500", text: "text-amber-400" };
+    if (criteriaMetCount === 3) return { label: "Good", color: "bg-cyan-500", text: "text-cyan-400" };
+    return { label: "Strong", color: "bg-emerald-500", text: "text-emerald-400" };
+  };
 
   const resetForm = () => {
     setErrorMsg("");
@@ -89,9 +110,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
 
         setSuccessMsg(`Welcome back, ${data.user.name || data.user.username}!`);
         setTimeout(() => {
-          onLoginSuccess(data.user);
+          onLoginSuccess({ ...data.user, isNewUser: false });
         }, 500);
       } else if (authMode === "signup") {
+        if (!isPasswordStrong) {
+          throw new Error(
+            "Password must be at least 8 characters long and include at least 1 uppercase letter, 1 number, and 1 special character."
+          );
+        }
+
         const res = await fetch("/api/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -109,9 +136,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
           throw new Error(data.error || "Failed to register account");
         }
 
-        setSuccessMsg("Account registered successfully in MongoDB!");
+        setSuccessMsg(`Welcome, ${data.user.name || data.user.username}!`);
         setTimeout(() => {
-          onLoginSuccess(data.user);
+          onLoginSuccess({ ...data.user, isNewUser: true });
         }, 600);
       } else if (authMode === "admin") {
         const res = await fetch("/api/auth", {
@@ -131,7 +158,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
 
         setSuccessMsg("Elevated Administrator Access Granted!");
         setTimeout(() => {
-          onLoginSuccess(data.user);
+          onLoginSuccess({ ...data.user, isNewUser: false });
         }, 500);
       }
     } catch (err: any) {
@@ -157,23 +184,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       setUsername("Founder_" + Math.floor(100 + Math.random() * 900));
       setName("Alex Rivera");
       setEmail(`alex.${Math.floor(Math.random() * 1000)}@venturelab.io`);
-      setPassword("startup2026");
+      setPassword("Startup@2026!");
       resetForm();
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
-      {/* Background Cyber Ambient Glows */}
-      <div className="absolute top-[-10%] left-[-5%] w-[650px] h-[650px] bg-indigo-600/15 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[700px] h-[700px] bg-emerald-600/15 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute top-[35%] right-[25%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[130px] pointer-events-none" />
+    <div className="min-h-screen bg-[#121316] text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+      {/* Background Subtle Charcoal Ambient Glows */}
+      <div className="absolute top-[-10%] left-[-5%] w-[650px] h-[650px] bg-indigo-500/[0.04] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[700px] h-[700px] bg-emerald-500/[0.03] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-[35%] right-[25%] w-[500px] h-[500px] bg-indigo-500/[0.02] rounded-full blur-[140px] pointer-events-none" />
 
       {/* Top Brand Header */}
       <header className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-emerald-400 p-[1px] shadow-lg shadow-indigo-500/20">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-emerald-400 p-[1px] shadow-lg shadow-indigo-500/20">
               <div className="h-full w-full bg-slate-950 rounded-[11px] flex items-center justify-center">
                 <Zap className="h-5 w-5 text-indigo-400" />
               </div>
@@ -194,12 +221,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">MongoDB Connected:</span>
-              <span className="font-mono text-emerald-300 font-semibold">startupgen</span>
-            </div>
+            {onOpenHelp && authMode !== "admin" && (
+              <button
+                type="button"
+                onClick={onOpenHelp}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-indigo-500/40 text-indigo-300 hover:text-white hover:bg-indigo-950/60 hover:border-indigo-400 text-xs font-semibold transition shadow-sm"
+                title="14-Stage Platform Guide & Founder Support"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Help &amp; Support</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -217,7 +249,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
               Validate Venture Ideas with <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 via-blue-300 to-emerald-400 bg-clip-text text-transparent">
                 Institutional AI Precision
               </span>
             </h1>
@@ -279,9 +311,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => handleQuickFill("admin")}
-                  className="px-3.5 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-300 text-xs font-semibold hover:bg-purple-900/50 hover:border-purple-400 transition flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-800 hover:border-slate-500 hover:text-white transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                   <span>Admin Demo (admin / admin)</span>
                 </button>
 
@@ -301,7 +333,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
             <div className="relative glass-panel rounded-3xl p-6 sm:p-8 border border-slate-700/80 bg-slate-900/90 shadow-2xl backdrop-blur-xl">
               {/* Header Gradient Stripe */}
-              <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400" />
+              <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-400" />
 
               {/* Mode Switcher Tabs */}
               <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-2xl border border-slate-800 mb-6 shadow-inner">
@@ -334,10 +366,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => handleModeChange("admin")}
-                  className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     authMode === "admin"
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/30"
-                      : "text-slate-400 hover:text-purple-300"
+                      ? "bg-slate-800 text-white border border-slate-600/70 shadow-md shadow-black/40"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   <Shield className="w-3.5 h-3.5 text-amber-400" />
@@ -373,7 +405,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-xl font-bold text-white">Administrator Portal</h2>
-                      <span className="text-[10px] uppercase font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/40">
+                      <span className="text-[10px] uppercase font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">
                         Elevated Access
                       </span>
                     </div>
@@ -432,7 +464,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                   </label>
                   <div className="relative">
                     {authMode === "admin" ? (
-                      <KeyRound className="w-4 h-4 text-purple-400 absolute left-3.5 top-3" />
+                      <KeyRound className="w-4 h-4 text-amber-400 absolute left-3.5 top-3" />
                     ) : (
                       <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                     )}
@@ -450,7 +482,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                       }
                       className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-950 border text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition ${
                         authMode === "admin"
-                          ? "border-purple-500/50 focus:border-purple-400"
+                          ? "border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
                           : "border-slate-700 focus:border-indigo-500"
                       }`}
                     />
@@ -481,11 +513,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-semibold text-slate-300">
-                      Password
+                      {authMode === "signup" ? "Set Password" : "Password"}
                     </label>
                     {authMode === "signin" && (
                       <span className="text-[10px] text-indigo-400 hover:underline cursor-pointer">
                         Preset: Guru@4913
+                      </span>
+                    )}
+                    {authMode === "signup" && (
+                      <span className="text-[10px] text-slate-400">
+                        Must be strong
                       </span>
                     )}
                   </div>
@@ -499,7 +536,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                       placeholder="••••••••"
                       className={`w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950 border text-sm text-slate-200 placeholder-slate-500 focus:outline-none transition ${
                         authMode === "admin"
-                          ? "border-purple-500/50 focus:border-purple-400"
+                          ? "border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
+                          : authMode === "signup" && password.length > 0
+                          ? isPasswordStrong
+                            ? "border-emerald-500/80 focus:border-emerald-400"
+                            : "border-amber-500/60 focus:border-amber-400"
                           : "border-slate-700 focus:border-indigo-500"
                       }`}
                     />
@@ -513,16 +554,116 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                   </div>
                 </div>
 
+                {/* Password Strength Indicator & Requirements (Signup Mode) */}
+                {authMode === "signup" && (
+                  <div className="space-y-2.5 pt-1 p-3 rounded-2xl bg-slate-950/70 border border-slate-800 animate-in fade-in">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-medium">Password Strength:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-bold text-xs ${getStrengthInfo().text}`}>
+                          {getStrengthInfo().label}
+                        </span>
+                        {isPasswordStrong && (
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 4-bar strength progress meter */}
+                    <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full">
+                      {[1, 2, 3, 4].map((step) => {
+                        const active = criteriaMetCount >= step && password.length > 0;
+                        let barColor = "bg-slate-800";
+                        if (active) {
+                          if (criteriaMetCount <= 1) barColor = "bg-red-500 shadow-sm shadow-red-500/50";
+                          else if (criteriaMetCount === 2) barColor = "bg-amber-500 shadow-sm shadow-amber-500/50";
+                          else if (criteriaMetCount === 3) barColor = "bg-cyan-500 shadow-sm shadow-cyan-500/50";
+                          else barColor = "bg-emerald-500 shadow-sm shadow-emerald-500/50";
+                        }
+                        return (
+                          <div
+                            key={step}
+                            className={`h-full rounded-full transition-all duration-300 ${barColor}`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Requirements Checklist */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                      <div
+                        className={`flex items-center gap-1.5 transition-colors ${
+                          passwordCriteria.hasMinLength ? "text-emerald-400 font-medium" : "text-slate-500"
+                        }`}
+                      >
+                        {passwordCriteria.hasMinLength ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span className="w-1 h-1 rounded-full bg-slate-600" />
+                          </div>
+                        )}
+                        <span>Min 8 characters</span>
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-1.5 transition-colors ${
+                          passwordCriteria.hasUpper ? "text-emerald-400 font-medium" : "text-slate-500"
+                        }`}
+                      >
+                        {passwordCriteria.hasUpper ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span className="w-1 h-1 rounded-full bg-slate-600" />
+                          </div>
+                        )}
+                        <span>1 capital letter (A-Z)</span>
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-1.5 transition-colors ${
+                          passwordCriteria.hasNumber ? "text-emerald-400 font-medium" : "text-slate-500"
+                        }`}
+                      >
+                        {passwordCriteria.hasNumber ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span className="w-1 h-1 rounded-full bg-slate-600" />
+                          </div>
+                        )}
+                        <span>1 number (0-9)</span>
+                      </div>
+
+                      <div
+                        className={`flex items-center gap-1.5 transition-colors ${
+                          passwordCriteria.hasSpecial ? "text-emerald-400 font-medium" : "text-slate-500"
+                        }`}
+                      >
+                        {passwordCriteria.hasSpecial ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span className="w-1 h-1 rounded-full bg-slate-600" />
+                          </div>
+                        )}
+                        <span>1 special char (!@#$)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Submit Action Button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 px-4 rounded-xl text-white font-bold text-sm shadow-lg transition flex items-center justify-center gap-2 mt-2 disabled:opacity-50 ${
+                  className={`w-full py-3 px-4 rounded-xl text-white font-bold text-sm shadow-lg transition flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer ${
                     authMode === "admin"
-                      ? "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-600/30"
+                      ? "bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 shadow-xl shadow-black/40 hover:border-slate-500"
                       : authMode === "signup"
-                      ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30"
-                      : "bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/30"
+                      ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/25 border border-emerald-400/30"
+                      : "bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 hover:from-indigo-500 hover:to-blue-500 shadow-indigo-600/25 border border-indigo-400/30"
                   }`}
                 >
                   {loading ? (
@@ -562,12 +703,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 relative z-20 bg-slate-950/40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>StartupGen · AI + API + Cloud Multi-Sector Startup Validator Engine</div>
-          <div className="flex items-center gap-4 text-slate-400 text-[11px]">
+          <div className="flex items-center gap-4 text-slate-400 text-[11px] flex-wrap justify-center">
             <span>14-Stage Institutional Pipeline</span>
             <span>·</span>
             <span>Real-Time Cloud Blueprints</span>
             <span>·</span>
             <span>Zero Hallucination Telemetry</span>
+            {onOpenHelp && authMode !== "admin" && (
+              <>
+                <span>·</span>
+                <button
+                  type="button"
+                  onClick={onOpenHelp}
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline flex items-center gap-1 transition"
+                >
+                  <HelpCircle className="w-3 h-3" />
+                  <span>Help &amp; Founder Support</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>

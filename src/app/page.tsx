@@ -15,6 +15,7 @@ import { StepMarketValidation } from "@/components/Wizard/StepMarketValidation";
 import { StepCloudFeasibility } from "@/components/Wizard/StepCloudFeasibility";
 import { StepMvpAndRoadmap } from "@/components/Wizard/StepMvpAndRoadmap";
 import { DossierExport } from "@/components/Wizard/DossierExport";
+import { HelpModal } from "@/components/Help/HelpModal";
 import {
   FounderProfile,
   StartupIdea,
@@ -58,6 +59,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isVaultOpen, setIsVaultOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Core wizard data state
   const [profile, setProfile] = useState<FounderProfile | null>(null);
@@ -72,16 +74,25 @@ export default function Home() {
   const [loadingText, setLoadingText] = useState("");
   const [savedProjects, setSavedProjects] = useState<StartupProject[]>([]);
 
-  // Filter projects owned by current user (plus legacy reports without username tag)
+  // Filter projects owned strictly by current user
   const userProjects = React.useMemo(() => {
     if (!currentUser) return [];
-    return savedProjects.filter(
-      (p) =>
-        !p.username ||
-        p.username.toLowerCase() === currentUser.username.toLowerCase() ||
-        (currentUser.id && p.userId === currentUser.id) ||
-        (currentUser._id && p.userId === currentUser._id)
-    );
+    if (currentUser.role === "admin") {
+      const adminUname = currentUser.username?.toLowerCase().trim();
+      return savedProjects.filter(
+        (p) => p.username && p.username.toLowerCase().trim() === adminUname
+      );
+    }
+    const currentUname = currentUser.username?.toLowerCase().trim();
+    const currentId = currentUser.id || currentUser._id;
+    return savedProjects.filter((p) => {
+      if (!p) return false;
+      const pUname = p.username?.toLowerCase().trim();
+      const pId = p.userId;
+      if (currentUname && pUname && pUname === currentUname) return true;
+      if (currentId && pId && pId === currentId) return true;
+      return false;
+    });
   }, [savedProjects, currentUser]);
 
   // Load user session, preferences, and saved vault items on mount
@@ -96,16 +107,19 @@ export default function Home() {
             if (parsedUser.role === "admin") {
               setAdminView("dashboard");
             } else {
-              // For regular founders, if they have saved projects, default to reports hub
-              const localProjects = getSavedProjects();
-              const hasProjects = localProjects.some(
-                (p) =>
-                  !p.username ||
-                  p.username.toLowerCase() === parsedUser.username.toLowerCase() ||
-                  (parsedUser.id && p.userId === parsedUser.id)
-              );
+              // For regular founders, load only their own saved projects
+              const localProjects = getSavedProjects(parsedUser.username);
+              const hasProjects = localProjects.length > 0;
               setUserView(hasProjects ? "reports" : "wizard");
+              setSavedProjects(localProjects);
             }
+
+            // Hydrate with MongoDB database for this user
+            syncVaultWithDatabase(parsedUser).then((projects) => {
+              if (projects && projects.length > 0) {
+                setSavedProjects(projects);
+              }
+            });
           }
         }
       } catch (e) {
@@ -120,14 +134,6 @@ export default function Home() {
       setApiKey(savedKey);
       setTavilyApiKey(savedTavily);
       setCloudPreference(savedPref);
-      setSavedProjects(getSavedProjects());
-
-      // Hydrate with MongoDB database
-      syncVaultWithDatabase().then((projects) => {
-        if (projects && projects.length > 0) {
-          setSavedProjects(projects);
-        }
-      });
     } else {
       setIsAuthChecking(false);
     }
@@ -135,33 +141,23 @@ export default function Home() {
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
-    if (user.role === "admin") {
-      setAdminView("dashboard");
-    } else {
-      const localProjects = getSavedProjects();
-      const hasProjects = localProjects.some(
-        (p) =>
-          !p.username ||
-          p.username.toLowerCase() === user.username.toLowerCase() ||
-          (user.id && p.userId === user.id)
-      );
-      setUserView(hasProjects ? "reports" : "wizard");
-    }
     if (typeof window !== "undefined") {
       localStorage.setItem("startupgen_auth_user", JSON.stringify(user));
     }
-    // Refresh vault from MongoDB
-    syncVaultWithDatabase().then((projects) => {
+    if (user.role === "admin") {
+      setAdminView("dashboard");
+    } else {
+      const localProjects = getSavedProjects(user.username);
+      const hasProjects = localProjects.length > 0;
+      setUserView(hasProjects ? "reports" : "wizard");
+      setSavedProjects(localProjects);
+    }
+    // Refresh vault from MongoDB for THIS user
+    syncVaultWithDatabase(user).then((projects) => {
       if (projects) {
         setSavedProjects(projects);
-        if (user.role !== "admin") {
-          const has = projects.some(
-            (p) =>
-              !p.username ||
-              p.username.toLowerCase() === user.username.toLowerCase() ||
-              (user.id && p.userId === user.id)
-          );
-          if (has) setUserView("reports");
+        if (user.role !== "admin" && projects.length > 0) {
+          setUserView("reports");
         }
       }
     });
@@ -169,6 +165,8 @@ export default function Home() {
 
   const handleSignOut = () => {
     setCurrentUser(null);
+    setSavedProjects([]);
+    setCurrentProject(null);
     if (typeof window !== "undefined") {
       localStorage.removeItem("startupgen_auth_user");
     }
@@ -177,8 +175,9 @@ export default function Home() {
   };
 
   const refreshVault = () => {
-    setSavedProjects(getSavedProjects());
-    syncVaultWithDatabase().then((projects) => {
+    if (!currentUser) return;
+    setSavedProjects(getSavedProjects(currentUser.username));
+    syncVaultWithDatabase(currentUser).then((projects) => {
       if (projects) setSavedProjects(projects);
     });
   };
@@ -410,11 +409,14 @@ export default function Home() {
   const handleViewDossier = () => {
     if (!profile || !selectedIdea || !validation || !feasibility) return;
 
+    const activeUname = currentUser?.username || "founder";
+    const activeUid = currentUser?.id || currentUser?._id || `usr-${activeUname}`;
+
     const project: StartupProject = {
       id: `proj-${Date.now()}`,
       createdAt: new Date().toISOString(),
-      userId: currentUser?.id || currentUser?._id,
-      username: currentUser?.username,
+      userId: activeUid,
+      username: activeUname,
       founderProfile: profile,
       selectedIdea,
       allIdeas: ideas,
@@ -424,9 +426,18 @@ export default function Home() {
     };
 
     setCurrentProject(project);
+    if (currentUser?.isNewUser) {
+      const updatedUser = { ...currentUser, isNewUser: false };
+      setCurrentUser(updatedUser);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("startupgen_auth_user", JSON.stringify(updatedUser));
+      }
+    }
     // Auto-persist directly into MongoDB & local vault
-    saveProjectToVault(project);
-    syncVaultWithDatabase().then((projects) => setSavedProjects(projects));
+    saveProjectToVault(project, currentUser);
+    syncVaultWithDatabase(currentUser).then((projects) => {
+      if (projects) setSavedProjects(projects);
+    });
     setCurrentStep(6);
     setUserView("wizard");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -468,7 +479,7 @@ export default function Home() {
   // If loading session, show subtle spinner
   if (isAuthChecking) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#121316] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
           <div className="text-xs text-slate-400 font-mono">Initializing StartupGen...</div>
@@ -479,18 +490,29 @@ export default function Home() {
 
   // 1. If not authenticated, render Login / Sign-up / Admin Portal page first!
   if (!currentUser) {
-    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <AuthPage onLoginSuccess={handleLoginSuccess} onOpenHelp={() => setIsHelpOpen(true)} />
+        <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      </>
+    );
   }
 
   // 2. If authenticated, render full 14-Stage Validation Platform
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between relative overflow-x-hidden">
+      {/* Dynamic ambient color glows */}
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/[0.08] rounded-full blur-[130px] pointer-events-none -z-10" />
+      <div className="fixed bottom-1/4 right-10 w-[500px] h-[500px] bg-emerald-500/[0.07] rounded-full blur-[130px] pointer-events-none -z-10" />
+      <div className="fixed top-1/2 right-1/4 w-[450px] h-[450px] bg-cyan-500/[0.07] rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="fixed bottom-10 left-10 w-[400px] h-[400px] bg-amber-500/[0.05] rounded-full blur-[110px] pointer-events-none -z-10" />
+
       {/* Top Navbar */}
       <Navigation
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenVault={() => setIsVaultOpen(true)}
         onOpenCompare={() => setIsCompareOpen(true)}
-        vaultCount={savedProjects.length}
+        vaultCount={currentUser?.role === "admin" ? savedProjects.length : userProjects.length}
         onSelectPreset={handleSelectPreset}
         currentUser={currentUser}
         onSignOut={handleSignOut}
@@ -511,6 +533,7 @@ export default function Home() {
           }
         }}
         userReportsCount={userProjects.length}
+        onOpenHelp={currentUser?.role !== "admin" ? () => setIsHelpOpen(true) : undefined}
       />
 
       {/* Main Content Area */}
@@ -537,13 +560,13 @@ export default function Home() {
           <>
             {/* If regular founder has saved reports and is on step 1 of wizard, show quick banner to return to My Reports */}
             {currentUser?.role !== "admin" && userProjects.length > 0 && currentStep === 1 && (
-              <div className="no-print max-w-5xl mx-auto mb-6 p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-emerald-950/40 border border-indigo-500/30 flex items-center justify-between text-xs backdrop-blur-md shadow-lg shadow-indigo-950/20">
-                <div className="flex items-center gap-2.5 text-indigo-200">
-                  <div className="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold">
-                    <FolderHeart className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="no-print max-w-5xl mx-auto mb-6 p-4 rounded-3xl bg-gradient-to-r from-[#171a28] via-[#141d24] to-[#171a28] border border-cyan-500/30 flex items-center justify-between text-xs backdrop-blur-xl shadow-xl shadow-cyan-950/20">
+                <div className="flex items-center gap-3 text-cyan-200">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-sm shadow-emerald-500/20 font-bold">
+                    <FolderHeart className="w-4 h-4 text-emerald-400" />
                   </div>
                   <span>
-                    You have <strong>{userProjects.length}</strong> saved startup report(s) in your portfolio.
+                    You have <strong className="text-white font-bold">{userProjects.length}</strong> saved startup report(s) in your portfolio.
                   </span>
                 </div>
                 <button
@@ -552,7 +575,7 @@ export default function Home() {
                     setUserView("reports");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 cursor-pointer"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-600/30 border border-emerald-400/30 cursor-pointer transform hover:-translate-y-0.5"
                 >
                   <FolderHeart className="w-3.5 h-3.5" />
                   <span>View My Reports ({userProjects.length}) →</span>
@@ -562,13 +585,13 @@ export default function Home() {
 
             {/* If admin is viewing validator flow, provide a top banner to easily return to Admin Analytics */}
             {currentUser?.role === "admin" && (
-              <div className="no-print max-w-5xl mx-auto mb-6 p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/60 via-slate-900 to-purple-950/60 border border-purple-500/40 flex items-center justify-between text-xs backdrop-blur-md shadow-lg shadow-purple-950/20">
-                <div className="flex items-center gap-2.5 text-purple-200">
-                  <div className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold">
+              <div className="no-print max-w-5xl mx-auto mb-6 p-4 rounded-3xl bg-gradient-to-r from-[#1c1916] via-[#191824] to-[#141b24] border border-amber-500/30 flex items-center justify-between text-xs backdrop-blur-xl shadow-xl shadow-amber-950/20">
+                <div className="flex items-center gap-3 text-amber-200">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 font-bold shadow-sm shadow-amber-500/20">
                     ⚡
                   </div>
                   <span>
-                    Operating in <strong>Validator Flow Mode</strong>. You can switch back to website analytics at any time.
+                    Operating in <strong className="text-white">Validator Flow Mode</strong>. You can return to website analytics at any time.
                   </span>
                 </div>
                 <button
@@ -577,9 +600,9 @@ export default function Home() {
                     setAdminView("dashboard");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-purple-600/30 cursor-pointer"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-md shadow-amber-950/30 border border-amber-400/40 cursor-pointer"
                 >
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                   <span>Return to Admin Analytics →</span>
                 </button>
               </div>
@@ -587,7 +610,7 @@ export default function Home() {
 
             {/* Step Progression Breadcrumb (Shown on steps 2-6) */}
             {currentStep > 1 && (
-              <div className="no-print max-w-5xl mx-auto mb-8 p-3 sm:p-4 rounded-3xl glass-panel border border-slate-800/90 shadow-xl flex items-center justify-between text-xs overflow-x-auto gap-2.5">
+              <div className="no-print max-w-5xl mx-auto mb-8 p-3 sm:p-4 rounded-3xl glass-panel border border-indigo-500/25 bg-gradient-to-r from-[#181a28] via-[#151c22] to-[#181a28] shadow-2xl shadow-indigo-950/20 flex items-center justify-between text-xs overflow-x-auto gap-2.5">
                 {[
                   { num: 1, label: "Vision & Map", active: currentStep === 1, done: currentStep > 1 },
                   { num: 2, label: "AI Concepts", active: currentStep === 2, done: currentStep > 2 },
@@ -606,20 +629,20 @@ export default function Home() {
                         }
                       }}
                       disabled={!step.done && !step.active}
-                      className={`flex items-center gap-2 transition px-2.5 py-1.5 rounded-xl ${
+                      className={`flex items-center gap-2 transition px-3 py-1.5 rounded-xl ${
                         step.active
-                          ? "bg-indigo-950/60 border border-indigo-500/40 text-white shadow-md shadow-indigo-950/50"
+                          ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-600/30 border border-cyan-400/40"
                           : step.done
-                          ? "cursor-pointer hover:bg-slate-900/60 text-slate-300"
+                          ? "cursor-pointer hover:bg-slate-900/80 text-emerald-300 font-semibold"
                           : "cursor-default text-slate-500 opacity-60"
                       }`}
                     >
                       <div
                         className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] font-mono transition-all ${
                           step.done
-                            ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/30"
+                            ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm shadow-emerald-500/30"
                             : step.active
-                            ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white ring-2 ring-indigo-400/40 shadow-sm shadow-indigo-500/30"
+                            ? "bg-white text-indigo-900 font-black shadow-md"
                             : "bg-slate-800 text-slate-400"
                         }`}
                       >
@@ -627,13 +650,13 @@ export default function Home() {
                       </div>
                       <span
                         className={`font-semibold tracking-tight text-xs ${
-                          step.active ? "text-white" : step.done ? "text-slate-200" : "text-slate-500"
+                          step.active ? "text-white" : step.done ? "text-emerald-200" : "text-slate-500"
                         }`}
                       >
                         {step.label}
                       </span>
                     </button>
-                    {idx < 5 && <ChevronRight className="w-3.5 h-3.5 text-slate-700 ml-1 flex-shrink-0" />}
+                    {idx < 5 && <ChevronRight className="w-3.5 h-3.5 text-slate-600 ml-1 flex-shrink-0" />}
                   </div>
                 ))}
               </div>
@@ -641,7 +664,7 @@ export default function Home() {
 
             {/* Global Loading Overlay */}
             {isLoading && (
-              <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-xl animate-in fade-in duration-200">
+              <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#121316]/90 backdrop-blur-xl animate-in fade-in duration-200">
                 <div className="relative flex items-center justify-center mb-5">
                   <div className="w-20 h-20 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin" />
                   <div className="w-12 h-12 rounded-full bg-indigo-500/20 absolute flex items-center justify-center">
@@ -660,6 +683,8 @@ export default function Home() {
                 onDirectValidateIdea={handleDirectValidateIdea}
                 isLoading={isLoading}
                 initialProfile={profile || undefined}
+                defaultEmail={currentUser?.email}
+                onOpenHelp={currentUser?.role !== "admin" ? () => setIsHelpOpen(true) : undefined}
               />
             )}
 
@@ -695,14 +720,17 @@ export default function Home() {
               <StepMvpAndRoadmap
                 idea={selectedIdea}
                 feasibility={feasibility}
+                profile={profile || undefined}
                 onNext={handleViewDossier}
                 onBack={() => setCurrentStep(4)}
+                onStartNewValidation={handleStartNewValidation}
               />
             )}
 
             {currentStep === 6 && currentProject && (
               <DossierExport
                 project={currentProject}
+                currentUser={currentUser}
                 onRestart={handleRestart}
                 onProjectSaved={refreshVault}
                 onBack={() => setCurrentStep(5)}
@@ -714,18 +742,28 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="no-print border-t border-slate-800/80 bg-slate-950/60 py-6 mt-12 text-center text-xs text-slate-400">
+      <footer className="no-print border-t border-slate-800/80 bg-[#121316]/90 py-6 mt-12 text-center text-xs text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-200">StartupGen</span>
             <span>— AI Idea Generation, Live API Market Validation & Cloud Architecture</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>Built-in Heuristic & Gemini AI</span>
+            <span>Built-in Heuristic &amp; Gemini AI</span>
             <span>·</span>
             <span>Global Ecosystem Map</span>
-            <span>·</span>
-            <span>MoSCoW Backlog & Roadmap</span>
+            {currentUser?.role !== "admin" && (
+              <>
+                <span>·</span>
+                <button
+                  type="button"
+                  onClick={() => setIsHelpOpen(true)}
+                  className="text-indigo-400 hover:text-indigo-300 font-semibold underline transition"
+                >
+                  Help &amp; Founder Support
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>
@@ -747,7 +785,8 @@ export default function Home() {
       <CloudVaultModal
         isOpen={isVaultOpen}
         onClose={() => setIsVaultOpen(false)}
-        projects={savedProjects}
+        projects={currentUser?.role === "admin" ? savedProjects : userProjects}
+        currentUser={currentUser}
         onSelectProject={handleSelectVaultProject}
         onProjectDeleted={refreshVault}
         onOpenCompare={() => setIsCompareOpen(true)}
@@ -756,7 +795,7 @@ export default function Home() {
       <CompareProjectsModal
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
-        projects={savedProjects}
+        projects={currentUser?.role === "admin" ? savedProjects : userProjects}
         currentProject={currentProject}
       />
 
@@ -766,6 +805,11 @@ export default function Home() {
         currentUser={currentUser}
         savedProjects={savedProjects}
         onSelectProject={handleSelectVaultProject}
+      />
+
+      <HelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
       />
     </div>
   );

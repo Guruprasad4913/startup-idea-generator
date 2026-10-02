@@ -21,7 +21,18 @@ import {
   ShieldAlert,
   HelpCircle,
   Check,
+  BarChart3,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { StartupIdea, FeasibilityReport, ScoringFactor } from "@/types";
 
 interface StepCloudFeasibilityProps {
@@ -270,7 +281,7 @@ export const StepCloudFeasibility: React.FC<StepCloudFeasibilityProps> = ({
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-300 font-extrabold flex items-center justify-center text-xs font-mono shadow-inner">
+                    <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 text-indigo-300 font-extrabold flex items-center justify-center text-xs font-mono shadow-inner">
                       {factor.score}%
                     </span>
                     <div>
@@ -358,7 +369,7 @@ export const StepCloudFeasibility: React.FC<StepCloudFeasibilityProps> = ({
               <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 block">
                 Scale Stage (100k+ Users)
               </span>
-              <div className="text-base sm:text-lg font-bold text-purple-300 mt-1.5 font-mono">
+              <div className="text-base sm:text-lg font-bold text-cyan-300 mt-1.5 font-mono">
                 {feasibility.cloudArchitecture.estimatedMonthlyCloudCost.scale}
               </div>
             </div>
@@ -481,7 +492,7 @@ export const StepCloudFeasibility: React.FC<StepCloudFeasibilityProps> = ({
                         {tier.tier}
                       </span>
                       {tier.highlighted && (
-                        <span className="text-[10px] bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                        <span className="text-[10px] bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-sm">
                           Recommended
                         </span>
                       )}
@@ -541,6 +552,85 @@ export const StepCloudFeasibility: React.FC<StepCloudFeasibilityProps> = ({
                   />
                   <span className="text-slate-400 font-mono">% MoM (Month-over-Month)</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Visual Runway Comparison Chart: Projected Revenue vs Operating Cost */}
+            <div className="p-4 rounded-2xl bg-gradient-to-b from-[#181a28] to-[#12131d] border border-indigo-500/25 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                  Monthly Revenue vs Operating Cost Trajectory
+                </span>
+                <span className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                  Breakeven &amp; Scaling Curves
+                </span>
+              </div>
+
+              <div className="h-56 w-full pt-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dynamicRunway} margin={{ top: 10, right: 15, left: -5, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#64748b"
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    />
+                    <YAxis
+                      stroke="#64748b"
+                      tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    />
+                    <Tooltip
+                      formatter={(val: any, name: any) => [
+                        `$${Number(val).toLocaleString()}`,
+                        name === "revenue" ? "Projected Revenue" : "Operating Cost",
+                      ]}
+                      labelFormatter={(label) => `Month: ${label}`}
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        borderColor: "#6366f1",
+                        borderRadius: "0.75rem",
+                        fontSize: "12px",
+                        color: "#fff",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "6px" }}
+                      formatter={(value) => (
+                        <span className="text-slate-300 font-medium">
+                          {value === "revenue" ? "Projected Revenue ($)" : "Estimated Operating & Cloud Cost ($)"}
+                        </span>
+                      )}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#revenueGrad)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cost"
+                      stroke="#f43f5e"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#costGrad)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
 

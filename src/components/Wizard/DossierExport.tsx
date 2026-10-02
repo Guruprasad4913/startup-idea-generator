@@ -31,12 +31,25 @@ import {
   Calendar,
   X,
   Zap,
+  Mail,
+  BarChart3,
 } from "lucide-react";
-import { StartupProject } from "@/types";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell,
+} from "recharts";
+import { StartupProject, User } from "@/types";
 import { exportProjectAsMarkdown, saveProjectToVault } from "@/lib/storage";
 
 interface DossierExportProps {
   project: StartupProject;
+  currentUser?: User | null;
   onRestart: () => void;
   onProjectSaved: () => void;
   onBack: () => void;
@@ -45,6 +58,7 @@ interface DossierExportProps {
 
 export const DossierExport: React.FC<DossierExportProps> = ({
   project,
+  currentUser,
   onRestart,
   onProjectSaved,
   onBack,
@@ -64,7 +78,14 @@ export const DossierExport: React.FC<DossierExportProps> = ({
   };
 
   const handleSaveToVault = () => {
-    saveProjectToVault(project);
+    const activeUsername = project.username || currentUser?.username;
+    const activeUserId = project.userId || currentUser?.id || currentUser?._id;
+    const enrichedProject: StartupProject = {
+      ...project,
+      username: activeUsername,
+      userId: activeUserId,
+    };
+    saveProjectToVault(enrichedProject, currentUser);
     setSaved(true);
     onProjectSaved();
     setTimeout(() => setSaved(false), 2500);
@@ -77,11 +98,11 @@ export const DossierExport: React.FC<DossierExportProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Top Toolbar (Hidden when printing) */}
-      <div className="no-print glass-panel rounded-3xl p-5 sm:p-6 border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-5 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/40 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-1/3 w-80 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="no-print glass-panel rounded-3xl p-5 sm:p-6 border border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-5 bg-gradient-to-r from-[#17181f] via-[#1c1d25] to-[#17181f] shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-1/3 w-80 h-32 bg-indigo-500/[0.04] rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
             <FileText className="w-6 h-6" />
           </div>
           <div>
@@ -138,7 +159,7 @@ export const DossierExport: React.FC<DossierExportProps> = ({
 
           <button
             onClick={handlePrint}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/25 border border-indigo-400/30 transition flex items-center gap-1.5 cursor-pointer"
             title="Download report as PDF or send to printer"
           >
             <Download className="w-3.5 h-3.5" />
@@ -168,19 +189,30 @@ export const DossierExport: React.FC<DossierExportProps> = ({
               {selectedIdea.tagline}
             </p>
 
-            {/* Target Location Badge */}
-            {loc && (
-              <div className="pt-1.5 flex items-center gap-2 flex-wrap text-xs text-slate-300">
-                <MapPin className="w-4 h-4 text-emerald-400" />
-                <span className="font-semibold text-white">{loc.city}, {loc.country}</span>
-                <span className="text-slate-500">·</span>
-                <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 text-[11px] font-mono font-bold">
-                  Ecosystem Score {loc.ecosystemScore}/100
-                </span>
-                <span className="text-slate-500">·</span>
-                <span className="text-slate-400 text-[11px] font-mono">{loc.talentIndex} Talent</span>
-              </div>
-            )}
+            {/* Target Location & Founder Email Badge */}
+            <div className="pt-1.5 flex items-center gap-2 flex-wrap text-xs text-slate-300">
+              {loc && (
+                <>
+                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <span className="font-semibold text-white">{loc.city}, {loc.country}</span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 text-[11px] font-mono font-bold">
+                    Ecosystem Score {loc.ecosystemScore}/100
+                  </span>
+                  <span className="text-slate-500">·</span>
+                  <span className="text-slate-400 text-[11px] font-mono">{loc.talentIndex} Talent</span>
+                </>
+              )}
+              {project.founderProfile?.founderEmail && (
+                <>
+                  <span className="text-slate-500">·</span>
+                  <span className="flex items-center gap-1 text-indigo-300 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20 text-[11px] font-mono">
+                    <Mail className="w-3 h-3 text-indigo-400" />
+                    <span>{project.founderProfile.founderEmail}</span>
+                  </span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Feasibility Verdict Pill */}
@@ -329,10 +361,10 @@ export const DossierExport: React.FC<DossierExportProps> = ({
         {/* Section 3: Competitive Differentiation & Battlecard */}
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4" /> 3. Competitive Landscape &amp; Defensibility Matrix
             </h2>
-            <span className="text-[11px] text-purple-300 font-medium">
+            <span className="text-[11px] text-indigo-300 font-medium">
               Moat: {selectedIdea.innovationMoat || "Architectural Advantage"}
             </span>
           </div>
@@ -373,57 +405,152 @@ export const DossierExport: React.FC<DossierExportProps> = ({
           </div>
 
           {/* Competitor Feature Comparison Battlecard (if available) */}
-          {validation.competitorComparisonMatrix && (
-            <div className="overflow-x-auto rounded-xl border border-indigo-500/30 bg-slate-950/80">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">Key Capability / Architecture</th>
-                    <th className="px-4 py-2.5 font-bold text-emerald-400 bg-emerald-500/10">
-                      {selectedIdea.name} (Our Product)
-                    </th>
-                    {validation.competitorComparisonMatrix.competitors.map((c, i) => (
-                      <th key={i} className="px-4 py-2.5 font-semibold text-slate-400">
-                        {c.name.split("(")[0].trim()}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/70 text-slate-300">
-                  {validation.competitorComparisonMatrix.features.map((feat, fIdx) => (
-                    <tr key={fIdx}>
-                      <td className="px-4 py-2 font-medium text-white">{feat}</td>
-                      <td className="px-4 py-2 font-bold text-emerald-400 bg-emerald-500/5">
-                        <span className="inline-flex items-center gap-1 text-[11px]">
-                          <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" /> Native Support
-                        </span>
-                      </td>
-                      {validation.competitorComparisonMatrix?.competitors.map((c, cIdx) => {
-                        const val = c.scores[feat];
-                        return (
-                          <td key={cIdx} className="px-4 py-2 text-slate-400">
-                            {typeof val === "boolean" ? (
-                              val ? (
-                                <span className="inline-flex items-center text-emerald-400 gap-1">
-                                  <Check className="w-3.5 h-3.5" /> Yes
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center text-rose-400 gap-1">
-                                  <X className="w-3.5 h-3.5" /> No
-                                </span>
-                              )
-                            ) : (
-                              <span>{val}</span>
-                            )}
+          {validation.competitorComparisonMatrix && (() => {
+            const totalFeatures = validation.competitorComparisonMatrix.features.length || 1;
+            const compChartData = [
+              {
+                name: `${selectedIdea.name} (Our Product)`,
+                coverage: 100,
+                supportedCount: totalFeatures,
+                total: totalFeatures,
+                isOurProduct: true,
+                color: "#10b981",
+              },
+              ...validation.competitorComparisonMatrix.competitors.map((c, cIdx) => {
+                let count = 0;
+                validation.competitorComparisonMatrix!.features.forEach((feat) => {
+                  const val = c.scores[feat];
+                  if (val === true) count += 1;
+                  else if (typeof val === "string" && val.toLowerCase() !== "false" && val.toLowerCase() !== "no") count += 0.5;
+                });
+                const pct = Math.min(100, Math.round((count / totalFeatures) * 100));
+                const colors = ["#6366f1", "#06b6d4", "#f59e0b", "#ec4899"];
+                return {
+                  name: c.name.split("(")[0].trim(),
+                  coverage: pct,
+                  supportedCount: Math.round(count * 10) / 10,
+                  total: totalFeatures,
+                  isOurProduct: false,
+                  color: colors[cIdx % colors.length],
+                };
+              }),
+            ];
+
+            return (
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <BarChart3 className="w-3.5 h-3.5 text-cyan-400" /> Competitive Capability Coverage &amp; Moat Index
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    ✨ 100% Native Architecture
+                  </span>
+                </div>
+
+                {/* Capability Comparison Bar Chart */}
+                <div className="p-4 rounded-2xl bg-gradient-to-b from-[#181a28] to-[#12131d] border border-indigo-500/30">
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={compChartData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          domain={[0, 100]}
+                          stroke="#64748b"
+                          tickFormatter={(v) => `${v}%`}
+                          tick={{ fill: "#94a3b8", fontSize: 10 }}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          stroke="#64748b"
+                          width={140}
+                          tick={{ fill: "#cbd5e1", fontSize: 10 }}
+                        />
+                        <Tooltip
+                          formatter={(val: any, _name: any, item: any) => [
+                            `${val}% (${item.payload.supportedCount}/${item.payload.total} capabilities supported)`,
+                            "Capability Coverage",
+                          ]}
+                          contentStyle={{
+                            backgroundColor: "#0f172a",
+                            borderColor: "#3b82f6",
+                            borderRadius: "0.5rem",
+                            fontSize: "11px",
+                            color: "#fff",
+                          }}
+                        />
+                        <Bar dataKey="coverage" radius={[0, 6, 6, 0]} maxBarSize={22}>
+                          {compChartData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              stroke={entry.isOurProduct ? "#34d399" : undefined}
+                              strokeWidth={entry.isOurProduct ? 1.5 : 0}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-indigo-500/30 bg-slate-950/80">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                      <tr>
+                        <th className="px-4 py-2.5 font-semibold">Key Capability / Architecture</th>
+                        <th className="px-4 py-2.5 font-bold text-emerald-400 bg-emerald-500/10">
+                          {selectedIdea.name} (Our Product)
+                        </th>
+                        {validation.competitorComparisonMatrix.competitors.map((c, i) => (
+                          <th key={i} className="px-4 py-2.5 font-semibold text-slate-400">
+                            {c.name.split("(")[0].trim()}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/70 text-slate-300">
+                      {validation.competitorComparisonMatrix.features.map((feat, fIdx) => (
+                        <tr key={fIdx}>
+                          <td className="px-4 py-2 font-medium text-white">{feat}</td>
+                          <td className="px-4 py-2 font-bold text-emerald-400 bg-emerald-500/5">
+                            <span className="inline-flex items-center gap-1 text-[11px]">
+                              <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" /> Native Support
+                            </span>
                           </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          {validation.competitorComparisonMatrix?.competitors.map((c, cIdx) => {
+                            const val = c.scores[feat];
+                            return (
+                              <td key={cIdx} className="px-4 py-2 text-slate-400">
+                                {typeof val === "boolean" ? (
+                                  val ? (
+                                    <span className="inline-flex items-center text-emerald-400 gap-1">
+                                      <Check className="w-3.5 h-3.5" /> Yes
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center text-rose-400 gap-1">
+                                      <X className="w-3.5 h-3.5" /> No
+                                    </span>
+                                  )
+                                ) : (
+                                  <span>{val}</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Section 4: Target User Persona & Buying Journey */}
@@ -566,10 +693,10 @@ export const DossierExport: React.FC<DossierExportProps> = ({
         {feasibility.mvpRecommendation && (
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                <Rocket className="w-4 h-4" /> 8. MVP (Minimum Viable Product) Recommendation, MoSCoW (Must, Should, Could, Won&apos;t Have) Scope &amp; 4-Week Sprint Plan
+              <h2 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
+                <Rocket className="w-4 h-4" /> 8. MVP (Minimum Viable Product) Recommendation, MoSCoW Scope &amp; Execution Sprint Plan
               </h2>
-              <span className="text-[11px] text-purple-300 font-semibold">
+              <span className="text-[11px] text-indigo-300 font-semibold">
                 {feasibility.mvpRecommendation.timelineWeeks} Weeks to Production Launch
               </span>
             </div>
@@ -580,9 +707,18 @@ export const DossierExport: React.FC<DossierExportProps> = ({
                   <span className="font-bold text-white text-sm block">{feasibility.mvpRecommendation.mvpName}</span>
                   <p className="text-slate-300 text-[11px] mt-0.5">{feasibility.mvpRecommendation.coreValueProposition}</p>
                 </div>
-                <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 text-[11px] flex-shrink-0">
-                  Target: 28 Days to Cashflow
-                </span>
+                {(() => {
+                  const tf = (feasibility.mvpRecommendation.timeframe || project.founderProfile.timeframe || "").toLowerCase();
+                  const is2W = tf.includes("2-week") || tf.includes("2 week") || tf.includes("14") || feasibility.mvpRecommendation.timelineWeeks === 2;
+                  const is30D = tf.includes("30-day") || tf.includes("30 day") || tf.includes("4-week") || tf.includes("4 week") || feasibility.mvpRecommendation.timelineWeeks === 4;
+                  const is6M = tf.includes("6 month") || tf.includes("enterprise") || tf.includes("24 week") || tf.includes("180") || feasibility.mvpRecommendation.timelineWeeks === 24;
+                  const targetText = is2W ? "14 Days to Launch" : is30D ? "30 Days to Cashflow" : is6M ? "180 Days to Staging" : "60-90 Days to Beta";
+                  return (
+                    <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 text-[11px] flex-shrink-0">
+                      Target: {targetText}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* MoSCoW Scope Grid */}
@@ -624,11 +760,17 @@ export const DossierExport: React.FC<DossierExportProps> = ({
                 </div>
               </div>
 
-              {/* 4-Week Sprint Plan */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800">
+              {/* Phased Sprint Plan */}
+              <div className={`grid gap-2 pt-2 border-t border-slate-800 ${
+                feasibility.mvpRecommendation.fourWeekSprintPlan.length <= 2
+                  ? "grid-cols-1 sm:grid-cols-2"
+                  : feasibility.mvpRecommendation.fourWeekSprintPlan.length === 3
+                  ? "grid-cols-1 sm:grid-cols-3"
+                  : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
+              }`}>
                 {feasibility.mvpRecommendation.fourWeekSprintPlan.map((sp) => (
                   <div key={sp.week} className="p-2.5 rounded-lg bg-slate-950 border border-slate-800/80 space-y-1">
-                    <span className="text-[10px] text-indigo-400 font-bold block">Week 0{sp.week}</span>
+                    <span className="text-[10px] text-indigo-400 font-bold block">{sp.periodLabel || `Week 0${sp.week}`}</span>
                     <div className="text-white font-medium text-[11px] truncate">{sp.title}</div>
                     <div className="text-slate-400 text-[10px] line-clamp-2">{sp.deliverable}</div>
                   </div>

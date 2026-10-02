@@ -68,22 +68,22 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
       {/* Step Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            Step 2 of 6: AI (Artificial Intelligence) Concept Selection
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-xs font-semibold mb-2 shadow-sm shadow-cyan-500/10">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            Step 2 of 6: AI Concept Selection
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
             Select Your Startup Concept to Validate
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Our AI (Artificial Intelligence) engine generated {ideas.length} tailored opportunities. Choose one to perform deep real-time API (Application Programming Interface) market scans &amp; cloud blueprinting.
+          <p className="text-xs sm:text-sm text-slate-300">
+            Our AI engine generated {ideas.length} tailored opportunities. Choose one to perform deep real-time API market scans &amp; cloud blueprinting.
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-center">
           <button
             onClick={() => setIsCustomModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white transition text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-indigo-600/30"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white transition text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/25 border border-cyan-400/30 cursor-pointer"
           >
             <PenTool className="w-3.5 h-3.5" />
             <span>+ Enter Custom Idea</span>
@@ -92,7 +92,7 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
           <button
             onClick={onBack}
             disabled={isValidating}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white transition text-xs font-medium flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-slate-900/90 text-slate-300 border border-slate-700/80 hover:border-cyan-400 hover:text-white transition text-xs font-medium flex items-center gap-1.5 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Adjust Inputs</span>
@@ -110,13 +110,13 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
               onClick={() => setSelectedId(idea.id)}
               className={`relative rounded-3xl p-6 cursor-pointer transition-all duration-300 flex flex-col justify-between ${
                 isSelected
-                  ? "bg-slate-900/95 border-2 border-indigo-500 shadow-2xl shadow-indigo-500/20 ring-2 ring-indigo-500/30 -translate-y-1"
-                  : "glass-panel-subtle hover:border-slate-700 hover:bg-slate-900/80 hover:-translate-y-1"
+                  ? "bg-gradient-to-b from-[#181a28] to-[#12131d] border-2 border-cyan-400 shadow-2xl shadow-cyan-500/20 ring-2 ring-cyan-500/30 -translate-y-1"
+                  : "bg-gradient-to-b from-[#161822]/80 to-[#12131a]/80 border border-slate-800 hover:border-indigo-500/40 hover:bg-[#181a25] hover:-translate-y-1"
               }`}
             >
               {/* Selected Badge */}
               {isSelected && (
-                <div className="absolute -top-3.5 right-5 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-500/40 ring-2 ring-slate-950">
+                <div className="absolute -top-3.5 right-5 px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg shadow-cyan-500/30 ring-2 ring-slate-950">
                   <Check className="w-3.5 h-3.5 stroke-[3]" /> Selected Concept
                 </div>
               )}
@@ -124,17 +124,17 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30 shadow-sm shadow-blue-500/10">
                       {idea.domain}
                     </span>
                     {idea.businessType && (
-                      <span className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                      <span className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
                         {idea.businessType}
                       </span>
                     )}
                   </div>
                   {idea.initialFeasibilityScore && (
-                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1 shadow-sm shadow-emerald-500/10">
                       <Zap className="w-3 h-3 text-emerald-400" />
                       {idea.initialFeasibilityScore}/100
                     </span>
@@ -142,7 +142,7 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight leading-snug group-hover:text-indigo-300">
+                  <h3 className="text-lg font-bold text-white tracking-tight leading-snug group-hover:text-cyan-300">
                     {idea.name}
                   </h3>
                   <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed line-clamp-2">
@@ -152,20 +152,20 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
 
                 {/* Problem & Solution Mini */}
                 <div className="space-y-2.5 pt-3 border-t border-slate-800/80 text-xs">
-                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Problem</span>
-                    <p className="text-slate-300 line-clamp-2 mt-0.5 leading-relaxed">{idea.problemStatement}</p>
+                  <div className="bg-slate-950/70 p-3 rounded-xl border border-indigo-500/15">
+                    <span className="text-blue-300 font-bold block text-[10px] uppercase tracking-wider">Problem</span>
+                    <p className="text-slate-200 line-clamp-2 mt-0.5 leading-relaxed">{idea.problemStatement}</p>
                   </div>
-                  <div className="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/60">
-                    <span className="text-slate-400 font-semibold block text-[10px] uppercase tracking-wider">Solution Strategy</span>
-                    <p className="text-slate-300 line-clamp-2 mt-0.5 leading-relaxed">{idea.solution}</p>
+                  <div className="bg-slate-950/70 p-3 rounded-xl border border-cyan-500/15">
+                    <span className="text-cyan-300 font-bold block text-[10px] uppercase tracking-wider">Solution Strategy</span>
+                    <p className="text-slate-200 line-clamp-2 mt-0.5 leading-relaxed">{idea.solution}</p>
                   </div>
                 </div>
 
                 {/* Target persona preview */}
                 <div className="pt-2 border-t border-slate-800/80 text-xs flex items-center gap-2 text-slate-400">
                   <Target className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                  <span className="truncate font-medium text-slate-300">{idea.targetPersona.title}</span>
+                  <span className="truncate font-medium text-slate-200">{idea.targetPersona.title}</span>
                 </div>
               </div>
 
@@ -174,7 +174,7 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
                 {idea.tags.slice(0, 3).map((tag) => (
                   <span
                     key={tag}
-                    className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800/70 text-slate-400 font-mono"
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800/70 text-cyan-300/80 font-mono border border-slate-700/60"
                   >
                     #{tag}
                   </span>
@@ -187,13 +187,14 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
 
       {/* Selected Idea Detailed Preview Drawer */}
       {currentSelectedIdea && (
-        <div className="glass-panel rounded-3xl p-6 sm:p-7 border border-indigo-500/30 space-y-5 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-indigo-950/30 shadow-2xl relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 border border-cyan-500/30 space-y-5 bg-gradient-to-br from-[#171926] via-[#151922] to-[#12141c] shadow-2xl shadow-cyan-950/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 via-emerald-400 to-indigo-500" />
+          <div className="absolute -top-12 -right-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1.5 border border-indigo-500/30">
-                <Sparkles className="w-3 h-3 text-indigo-400" /> Concept Blueprint Selected
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-cyan-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-cyan-400/30 shadow-sm shadow-cyan-500/10">
+                <Sparkles className="w-3 h-3 text-cyan-400" /> Concept Blueprint Selected
               </div>
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{currentSelectedIdea.name}</h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-0.5">{currentSelectedIdea.tagline}</p>
@@ -201,7 +202,7 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
             <button
               onClick={() => onSelectIdea(currentSelectedIdea)}
               disabled={isValidating}
-              className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
+              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs sm:text-sm shadow-xl shadow-indigo-600/30 border border-cyan-400/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer"
             >
               {isValidating ? (
                 <>
@@ -341,7 +342,7 @@ export const StepIdeaSelection: React.FC<StepIdeaSelectionProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/25 border border-indigo-400/30 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Concept
                 </button>

@@ -69,7 +69,23 @@ export async function generateCloudFeasibility(
   if (apiKey) {
     try {
       const report = await callGeminiForFeasibility(idea, validation, profile, apiKey);
-      if (report) return report;
+      if (report) {
+        if (!report.mvpRecommendation || !report.businessRoadmap) {
+          const dLower = (idea.domain + " " + (idea.businessType || "") + " " + idea.tags.join(" ")).toLowerCase();
+          const isExplicitTech = (
+            dLower.includes("software & saas") ||
+            dLower.includes("software platform") ||
+            dLower.includes("compliance platform") ||
+            dLower.includes("cloud middleware") ||
+            dLower.includes("ai platform")
+          ) && !dLower.includes("hardware") && !dLower.includes("physical") && !dLower.includes("construct") && !dLower.includes("constuct") && !dLower.includes("manufacturing");
+          const isNonTech = !isExplicitTech;
+          const { mvpRecommendation, businessRoadmap } = buildMvpAndRoadmap(idea, profile, isNonTech);
+          if (!report.mvpRecommendation) report.mvpRecommendation = mvpRecommendation;
+          if (!report.businessRoadmap) report.businessRoadmap = businessRoadmap;
+        }
+        return report;
+      }
     } catch (err) {
       console.warn("Gemini feasibility call failed, falling back to intelligent generator:", err);
     }
@@ -323,6 +339,7 @@ Name: ${idea.name}
 Domain: ${idea.domain}
 Solution: ${idea.solution}
 Budget: ${profile.budget}
+Timeframe: ${profile.timeframe}
 
 Generate an in-depth Feasibility, Cloud Architecture, and Revenue Model report.
 Return ONLY valid JSON matching this schema:
@@ -1688,6 +1705,747 @@ function generateIntelligentValidation(
   };
 }
 
+export function buildMvpAndRoadmap(
+  idea: StartupIdea,
+  profile: FounderProfile,
+  isNonTech: boolean
+): { mvpRecommendation: MVPRecommendation; businessRoadmap: BusinessRoadmap } {
+  const tf = (profile.timeframe || "").toLowerCase();
+
+  const is2Week = tf.includes("2-week") || tf.includes("2 week") || tf.includes("14") || tf.includes("rapid mvp");
+  const is30Day = tf.includes("30-day") || tf.includes("30 day") || tf.includes("4-week") || tf.includes("4 week") || tf.includes("pilot launch");
+  const is6Month = tf.includes("6 month") || tf.includes("enterprise") || tf.includes("24 week") || tf.includes("180");
+
+  if (is2Week) {
+    const mvpRecommendation: MVPRecommendation = {
+      mvpName: `${idea.name} 2-Week Rapid MVP`,
+      timelineWeeks: 2,
+      timeframe: profile.timeframe || "2-Week Rapid MVP Sprint",
+      coreValueProposition: isNonTech
+        ? "An ultra-lean, high-velocity commercial test: handcrafted small batch sample run / direct pop-up pilot validating immediate customer demand and willingness to pay within 14 days."
+        : "An ultra-focused, zero-bloat prototype solving the single primary acute bottleneck with sub-second execution to capture initial user commitments in 14 days.",
+      featureBacklog: {
+        mustHave: isNonTech
+          ? [
+              "Initial small-batch production run / sample formulation",
+              "Direct WhatsApp Business & UPI/QR instant payment checkout",
+              "Same-day local courier delivery / pop-up pickup station",
+              "Direct customer feedback questionnaire & reorder hook",
+            ]
+          : [
+              "Core algorithmic / AI transaction pipeline (single happy path)",
+              "Instant magic-link / OAuth user sign-in",
+              "Single primary output screen with instant copy/export",
+              "One-click feedback prompt & pilot pre-order payment link",
+            ],
+        shouldHave: isNonTech
+          ? [
+              "Branded packaging labels & care cards",
+              "Automated WhatsApp dispatch tracking updates",
+              "Simple Google Sheets / Airtable inventory counter",
+            ]
+          : [
+              "Automated welcome email via Resend",
+              "Basic usage limit meter",
+              "Export results to PDF/CSV",
+            ],
+        couldHave: isNonTech
+          ? [
+              "Dedicated web storefront with subscription billing",
+              "Bulk retail distribution wholesale packaging",
+              "Multi-city logistics integration",
+            ]
+          : [
+              "Role-based team workspaces",
+              "Custom domain white-labeling",
+              "Webhook notifications & Slack integration",
+            ],
+      },
+      recommendedStack: isNonTech
+        ? {
+            frontend: "WhatsApp Business Catalog + Single-Page Next.js Landing",
+            backend: "Direct Dispatch & POS Operations + UPI QR Gateway",
+            database: "Supabase / Airtable Lightweight Inventory Cache",
+            aiModel: "Batch Production Sizing & Pricing Heuristics",
+            lowCodeAccelerators: [
+              "Razorpay / UPI Quick Checkout",
+              "WhatsApp Business API for order receipts",
+              "Dunzo / Local Logistics API",
+              "Canva Pro for rapid branded packaging labels",
+            ],
+          }
+        : {
+            frontend: "Next.js 14 App Router, Tailwind CSS, Lucide Icons",
+            backend: "Next.js Edge Route Handlers + Serverless Functions",
+            database: "PostgreSQL (Supabase) + pgvector",
+            aiModel: "Google Gemini 1.5 Flash (sub-500ms inference)",
+            lowCodeAccelerators: [
+              "Clerk / NextAuth for instant secure authentication",
+              "Stripe Payment Links for rapid pilot checkout",
+              "Upstash Redis for sub-millisecond caching",
+              "Resend API for transactional user notifications",
+            ],
+          },
+      fourWeekSprintPlan: [
+        {
+          week: 1,
+          periodLabel: "Week 01",
+          daysLabel: "Days 1 - 7",
+          title: isNonTech ? "Sourcing & Rapid Prototype Formulation" : "Core Loop Architecture & Single-Flow UI",
+          goals: isNonTech
+            ? [
+                "Secure initial batch ingredients / material samples",
+                "Produce first 25 prototype units and test quality",
+                "Setup WhatsApp Business catalog & UPI QR payment flow",
+              ]
+            : [
+                "Scaffold Next.js app and wire core AI inference / calculation pipeline",
+                "Implement single-page focused UI for the primary job-to-be-done",
+                "Deploy staging build to Vercel with mock verification",
+              ],
+          deliverable: isNonTech
+            ? "25 packaged sample units with functional WhatsApp/UPI checkout flow"
+            : "Deployable prototype executing the core user workflow end-to-end",
+        },
+        {
+          week: 2,
+          periodLabel: "Week 02",
+          daysLabel: "Days 8 - 14",
+          title: isNonTech ? "Sampling, Direct Sales & Customer Validation" : "Beta User Testing, Polish & Public Launch",
+          goals: isNonTech
+            ? [
+                "Distribute sample units to 50 target customer prospects",
+                "Collect first 15 paid pre-orders and feedback ratings",
+                "Calculate real unit gross margins and repeat order intent",
+              ]
+            : [
+                "Conduct 5 live usability walkthroughs with target persona users",
+                "Fix primary UX drop-off points and implement Stripe payment link",
+                "Public launch on Product Hunt, Twitter/X & relevant niche communities",
+              ],
+          deliverable: isNonTech
+            ? "First 15+ paying customers and verified unit economics baseline"
+            : "Public production release with first 10-25 active users and paying pilot commitments",
+        },
+      ],
+    };
+
+    const businessRoadmap: BusinessRoadmap = {
+      phases: [
+        {
+          phase: 1,
+          title: isNonTech ? "Rapid Pilot Launch & Traction" : "Rapid MVP & Initial Traction",
+          timeframe: "Weeks 1 - 4",
+          milestones: isNonTech
+            ? [
+                "Ship 14-day small-batch MVP and fulfill first 50 orders",
+                "Achieve 40%+ customer satisfaction score and positive reviews",
+                "Establish consistent raw material supply relationships",
+                "Reach initial ₹75,000 in weekly sales",
+              ]
+            : [
+                "Ship 14-day rapid MVP to production",
+                "Onboard first 25 active users with > 50% weekly return rate",
+                "Collect first 3 signed LOIs or paying pilot subscriptions",
+                "Launch public waitlist reaching 300+ signups",
+              ],
+          keyMetrics: isNonTech ? "50 Customers · 40% Repeat Rate · ₹75k Sales" : "25 Active Users · 3 Paying Pilots · < 500ms Core Latency",
+          fundingGoal: "Bootstrapped / ₹5L - ₹15L Micro-Angel",
+          status: "Active",
+        },
+        {
+          phase: 2,
+          title: isNonTech ? "Commercial Expansion & Regular Orders" : "Closed Beta & Feature Iteration",
+          timeframe: "Months 2 - 4",
+          milestones: isNonTech
+            ? [
+                "Scale to 150 regular weekly customers",
+                "Introduce 2 new complementary product SKUs",
+                "Streamline kitchen/workshop prep to cut fulfillment time 40%",
+                "Reach ₹3,50,000 monthly revenue",
+              ]
+            : [
+                "Onboard 75 active users across 15 organizations",
+                "Deploy automated email digest and export engine",
+                "Reach first $3,000 in Monthly Recurring Revenue (MRR)",
+                "Optimize API inference cost by 35% with caching",
+              ],
+          keyMetrics: isNonTech ? "₹3.5L Monthly Revenue · 60% Repeat Rate" : "$3k MRR · 55% WAU/MAU · NPS 60+",
+          fundingGoal: "₹25L - ₹50L Angel Seed",
+          status: "Upcoming",
+        },
+        {
+          phase: 3,
+          title: isNonTech ? "Multi-Channel Distribution" : "Product-Market Fit & Monetization Scale",
+          timeframe: "Months 5 - 8",
+          milestones: isNonTech
+            ? [
+                "Launch on regional delivery aggregators & boutique retail shelves",
+                "Establish corporate bulk orders program",
+                "Cross ₹10,00,000 monthly run-rate",
+              ]
+            : [
+                "Scale to 200 paying accounts",
+                "Launch self-serve annual subscription billing",
+                "Achieve $15,000+ MRR with < 3% monthly churn",
+              ],
+          keyMetrics: isNonTech ? "₹10L Monthly Revenue · 65% Margin" : "$15k MRR · 10x LTV:CAC",
+          fundingGoal: "₹1 Crore - ₹2 Crore Pre-Series A",
+          status: "Planned",
+        },
+        {
+          phase: 4,
+          title: isNonTech ? "Brand Scaling & City Hubs" : "Market Expansion & Scale",
+          timeframe: "Months 9 - 12",
+          milestones: isNonTech
+            ? [
+                "Expand to 3 neighborhood delivery/retail hubs",
+                "Launch subscription replenishment membership",
+                "Cross ₹30,00,000 monthly revenue",
+              ]
+            : [
+                "Introduce team enterprise tier with SOC2 baseline",
+                "Cross $40,000+ MRR ($480k ARR)",
+                "Prepare institutional venture round",
+              ],
+          keyMetrics: isNonTech ? "₹30L Monthly Run-Rate · 3 Hubs" : "$40k MRR · 80% Gross Margin",
+          fundingGoal: "$1.0M - $2.5M Seed Round",
+          status: "Planned",
+        },
+      ],
+    };
+
+    return { mvpRecommendation, businessRoadmap };
+  }
+
+  if (is6Month) {
+    const mvpRecommendation: MVPRecommendation = isNonTech
+      ? {
+          mvpName: `${idea.name} Enterprise Production Facility`,
+          timelineWeeks: 24,
+          timeframe: profile.timeframe || "6 Months Enterprise Grade",
+          coreValueProposition: "An industrial-scale commercial enterprise: state-of-the-art production facility with ISO/HACCP certifications, corporate procurement SLAs, and dedicated supply chain resilience over 6 months.",
+          featureBacklog: {
+            mustHave: [
+              "Industrial production facility with certified ISO/health safety standards",
+              "Enterprise B2B procurement contract portal with Net-30 invoicing",
+              "Batch traceability & QR-verified supply chain provenance",
+              "Dedicated account manager & SLA-backed delivery fulfillment",
+            ],
+            shouldHave: [
+              "Automated cold-chain / climate-controlled fleet monitoring",
+              "Centralized ERP integration (SAP / Zoho Books enterprise sync)",
+              "Custom client packaging & white-label corporate branding",
+              "Automated inventory buffer warning & replenishment system",
+            ],
+            couldHave: [
+              "National franchise licensing & master franchisee portal",
+              "Regional warehouse depot expansion blueprint",
+              "Automated robotic packaging sorting lines",
+            ],
+          },
+          recommendedStack: {
+            frontend: "Next.js 14 Enterprise Portal + Tailored B2B Dashboard",
+            backend: "ERP & Automated Industrial Dispatch System + WhatsApp API",
+            database: "PostgreSQL (Aurora Multi-AZ) + Redis Telematics Cache",
+            aiModel: "Predictive Demand Forecasting & Fleet Routing Optimization",
+            lowCodeAccelerators: [
+              "RazorpayX / Stripe Invoicing for Net-30 B2B billing",
+              "Zoho Creator / AppSheet for internal floor management",
+              "Shiprocket Enterprise / Cold-Chain Logistics API",
+              "Tally Cloud API for automated GST e-way billing",
+            ],
+          },
+          fourWeekSprintPlan: [
+            {
+              week: 1,
+              periodLabel: "Phase 01",
+              daysLabel: "Month 1",
+              title: "Industrial Facility Blueprint & Regulatory Licensing",
+              goals: [
+                "Complete facility layout engineering and machinery procurement bids",
+                "Initiate ISO/HACCP and local environmental safety compliance filings",
+                "Finalize long-term raw material grower/supplier exclusivity pacts",
+              ],
+              deliverable: "Approved industrial blueprint, compliance filings, and supplier contracts",
+            },
+            {
+              week: 2,
+              periodLabel: "Phase 02",
+              daysLabel: "Months 2 - 3",
+              title: "Pilot Plant Commissioning & Batch Validation",
+              goals: [
+                "Install industrial processing equipment and test pilot runs",
+                "Conduct comprehensive lab shelf-life and stress-testing protocols",
+                "Establish automated quality assurance inspection checkpoints",
+              ],
+              deliverable: "Commissioned pilot facility producing lab-certified quality runs",
+            },
+            {
+              week: 3,
+              periodLabel: "Phase 03",
+              daysLabel: "Months 4 - 5",
+              title: "Enterprise Client Trials & Commercial Pre-Sales",
+              goals: [
+                "Initiate 10 commercial trials with institutional hospitality/retail buyers",
+                "Deploy B2B procurement portal with automated GST invoice generation",
+                "Finalize first 3 annual supply contracts with guaranteed minimum off-takes",
+              ],
+              deliverable: "3 signed commercial enterprise contracts with ₹15L+ committed pipeline",
+            },
+            {
+              week: 4,
+              periodLabel: "Phase 04",
+              daysLabel: "Month 6",
+              title: "Commercial Production Rollout & SLA Operations",
+              goals: [
+                "Commence full commercial manufacturing and distribution operations",
+                "Fulfill enterprise orders with 99.5% on-time delivery SLA guarantee",
+                "Establish recurring monthly revenue baseline exceeding ₹12,00,000",
+              ],
+              deliverable: "Full-scale certified manufacturing operations with profitable enterprise accounts",
+            },
+          ],
+        }
+      : {
+          mvpName: `${idea.name} Enterprise Platform MVP`,
+          timelineWeeks: 24,
+          timeframe: profile.timeframe || "6 Months Enterprise Grade",
+          coreValueProposition: "A high-assurance enterprise platform engineered for mission-critical reliability: SOC2/ISO27001 readiness, dedicated VPC deployment, granular RBAC, and guaranteed 99.9% uptime SLAs over 6 months.",
+          featureBacklog: {
+            mustHave: [
+              "Enterprise SSO (SAML 2.0 / Okta / Azure AD) & SCIM user provisioning",
+              "Role-based access control (RBAC) with granular tenant permissioning",
+              "Immutable audit logging & compliance activity export",
+              "High-availability multi-region cloud deployment with automated failover",
+            ],
+            shouldHave: [
+              "Custom API webhooks & bi-directional enterprise CRM integration",
+              "Dedicated VPC / single-tenant data residency options",
+              "Automated security vulnerability & patch monitoring",
+              "Enterprise SLA monitoring & automated latency alerting",
+            ],
+            couldHave: [
+              "On-premise air-gapped Docker/Kubernetes appliance",
+              "Custom fine-tuned private AI models on enterprise data",
+              "Multi-region active-active database replication",
+            ],
+          },
+          recommendedStack: {
+            frontend: "Next.js 14 App Router, Tailwind CSS, shadcn/ui, Recharts",
+            backend: "AWS ECS Fargate Container Microservices + Go/Node.js API",
+            database: "Amazon Aurora PostgreSQL Multi-AZ with pgvector & DynamoDB",
+            aiModel: "Self-hosted vLLM on AWS Bedrock / Private Gemini Enterprise VPC",
+            lowCodeAccelerators: [
+              "WorkOS / BoxyHQ for instant Enterprise SSO & SCIM",
+              "Stripe Billing Enterprise for custom contract invoicing",
+              "AWS KMS & Vault for hardware-grade key management",
+              "Datadog / AWS CloudWatch for real-time SLA telemetry",
+            ],
+          },
+          fourWeekSprintPlan: [
+            {
+              week: 1,
+              periodLabel: "Phase 01",
+              daysLabel: "Month 1",
+              title: "Enterprise Architecture & Security Blueprint",
+              goals: [
+                "Formalize architectural RFCs, data isolation models & threat matrices",
+                "Configure AWS/GCP multi-region VPC with encrypted secrets management",
+                "Draft SOC2 Type I control mappings and vendor risk assessment",
+              ],
+              deliverable: "Verified enterprise cloud topology and isolated staging environment",
+            },
+            {
+              week: 2,
+              periodLabel: "Phase 02",
+              daysLabel: "Months 2 - 3",
+              title: "Core Enterprise Platform & Identity Federation",
+              goals: [
+                "Implement enterprise SSO (SAML/Okta) and SCIM provisioning",
+                "Build scalable microservices with event-driven message queuing",
+                "Develop automated CI/CD security scanning (SAST/DAST) in pipeline",
+              ],
+              deliverable: "Functional core enterprise platform passing baseline penetration tests",
+            },
+            {
+              week: 3,
+              periodLabel: "Phase 03",
+              daysLabel: "Months 4 - 5",
+              title: "Enterprise Integrations, Audit Trails & Pilot Staging",
+              goals: [
+                "Implement immutable audit logs and exportable compliance reports",
+                "Build custom CRM/ERP webhooks and bi-directional sync adapters",
+                "Deploy private staging sandbox for enterprise design partner testing",
+              ],
+              deliverable: "Feature-complete enterprise platform deployed in staging with 5 corporate pilots",
+            },
+            {
+              week: 4,
+              periodLabel: "Phase 04",
+              daysLabel: "Month 6",
+              title: "SOC2 Certification, HA Validation & Commercial Rollout",
+              goals: [
+                "Complete third-party SOC2 Type I audit and penetration testing",
+                "Validate 99.9% uptime SLA under simulated heavy load conditions",
+                "Convert 5 enterprise pilot accounts into multi-year commercial contracts",
+              ],
+              deliverable: "Production release with enterprise SLA guarantees and first $100k+ in contract value",
+            },
+          ],
+        };
+
+    const businessRoadmap: BusinessRoadmap = {
+      phases: [
+        {
+          phase: 1,
+          title: isNonTech ? "Industrial Facility Build & Pilot Testing" : "Enterprise Platform Build & Pilot Validation",
+          timeframe: "Months 1 - 6",
+          milestones: isNonTech
+            ? [
+                "Complete facility buildout and achieve ISO/HACCP certification",
+                "Produce first 5,000 industrial batch units with 0 defects",
+                "Sign 5 enterprise supply contracts with corporate chains",
+                "Reach ₹15,00,000 monthly pilot revenue",
+              ]
+            : [
+                "Ship enterprise MVP with SAML SSO, RBAC, and SOC2 readiness",
+                "Deploy to private VPC for 5 enterprise design partners",
+                "Achieve 99.9% availability SLA across 500k API transactions",
+                "Secure 3 enterprise annual pilot contracts ($75k+ ARR)",
+              ],
+          keyMetrics: isNonTech ? "ISO Certified · ₹15L Monthly Revenue · 5 Enterprise Contracts" : "3 Enterprise Contracts · $75k ARR · 99.9% SLA · SOC2 Ready",
+          fundingGoal: "₹1.5 Crore - ₹3 Crore Institutional Seed",
+          status: "Active",
+        },
+        {
+          phase: 2,
+          title: isNonTech ? "Commercial Expansion & Regional Fleet" : "Enterprise Pilot Rollout & ARR Expansion",
+          timeframe: "Months 7 - 9",
+          milestones: isNonTech
+            ? [
+                "Expand regional logistics network to cover 3 metropolitan clusters",
+                "Cross ₹40,00,000 monthly gross revenue",
+                "Reduce bulk ingredient procurement costs by 15%",
+              ]
+            : [
+                "Expand to 20 paying mid-market and enterprise accounts",
+                "Achieve SOC2 Type II certification report",
+                "Cross $30,00,000+ MRR ($360k ARR) with net negative churn",
+              ],
+          keyMetrics: isNonTech ? "₹40L Monthly Revenue · 65% Gross Margin" : "$30k MRR · Net Revenue Retention 118%",
+          fundingGoal: "₹3 Crore - ₹6 Crore Pre-Series A",
+          status: "Upcoming",
+        },
+        {
+          phase: 3,
+          title: isNonTech ? "Multi-Facility Scale & Institutional Supply" : "Global Enterprise Scaling & Integration Ecosystem",
+          timeframe: "Months 10 - 14",
+          milestones: isNonTech
+            ? [
+                "Commission second manufacturing plant in strategic hub",
+                "Cross ₹1 Crore monthly run-rate with positive cash flow",
+                "Establish national distributor partnerships across 20 cities",
+              ]
+            : [
+                "Scale to 60 enterprise accounts with dedicated customer success",
+                "Launch integration marketplace with 25 pre-built enterprise connectors",
+                "Cross $80,000+ MRR ($1M ARR)",
+              ],
+          keyMetrics: isNonTech ? "₹1 Cr Monthly Run-Rate · 2 Facilities" : "$80k MRR ($1M ARR) · 12x LTV:CAC",
+          fundingGoal: "$3.0M - $6.0M Series A",
+          status: "Planned",
+        },
+        {
+          phase: 4,
+          title: isNonTech ? "National Dominance & Export Expansion" : "Market Dominance & Institutional Series A",
+          timeframe: "Months 15 - 18",
+          milestones: isNonTech
+            ? [
+                "Initiate international export distribution to Middle East & SE Asia",
+                "Reach ₹3 Crore monthly revenue",
+                "Prepare institutional growth equity round",
+              ]
+            : [
+                "Expand enterprise sales into European and Asia-Pacific corridors",
+                "Cross $180,000+ MRR ($2.2M ARR)",
+                "Complete institutional Series A venture round",
+              ],
+          keyMetrics: isNonTech ? "₹3 Cr Monthly Revenue · Export Operations" : "$180k MRR ($2.2M ARR) · 88% Gross Margin",
+          fundingGoal: "$10.0M+ Series B / Growth Round",
+          status: "Planned",
+        },
+      ],
+    };
+
+    return { mvpRecommendation, businessRoadmap };
+  }
+
+  // Default: 1-3 Months Full Beta (8 - 12 Weeks)
+  const mvpRecommendation: MVPRecommendation = isNonTech
+    ? {
+        mvpName: `${idea.name} Full Production Beta`,
+        timelineWeeks: 10,
+        timeframe: profile.timeframe || "1-3 Months Full Beta",
+        coreValueProposition: "A comprehensive commercial establishment: multi-channel storefront / fully equipped commissary with automated inventory, repeat subscription club, and verified brand positioning.",
+        featureBacklog: {
+          mustHave: [
+            "Dedicated high-conversion web storefront & omnichannel POS",
+            "Automated weekly/monthly doorstep subscription replenishment",
+            "Integrated logistics & courier dispatch tracking (Shiprocket/Dunzo)",
+            "Multi-tier loyalty points & automated customer re-engagement",
+          ],
+          shouldHave: [
+            "Corporate bulk gifting & B2B procurement portal",
+            "Automated supplier reorder threshold alerts",
+            "Custom branded packaging & unboxing experience",
+            "Weekly inventory & margin tracking dashboard",
+          ],
+          couldHave: [
+            "Franchise SOP operations manual & training portal",
+            "Regional warehouse depot expansion blueprint",
+            "Wholesale retail shelf package distribution",
+          ],
+        },
+        recommendedStack: {
+          frontend: "Next.js 14 Web Storefront / Shopify Headless + Tailwind CSS",
+          backend: "Omnichannel POS & Inventory Operations + WhatsApp API",
+          database: "PostgreSQL (Supabase) + Local Offline POS Cache",
+          aiModel: "Demand Forecasting & Automated Inventory Replenishment Heuristics",
+          lowCodeAccelerators: [
+            "Razorpay / Stripe for multi-currency payment checkout",
+            "Shiprocket / Local Logistics API for express delivery",
+            "WhatsApp Business API for automated order updates",
+            "Zoho / Tally Cloud for GST invoice compliance",
+          ],
+        },
+        fourWeekSprintPlan: [
+          {
+            week: 1,
+            periodLabel: "Phase 01",
+            daysLabel: "Weeks 1 - 2",
+            title: "Supply Chain, Formulation & Legal Licensing",
+            goals: [
+              "Secure verified grower/supplier contracts and batch ingredients",
+              "Obtain FSSAI, trade license, and GST registrations",
+              "Finalize product packaging design and eco-friendly materials",
+            ],
+            deliverable: "Approved production specifications and verified regulatory compliance",
+          },
+          {
+            week: 2,
+            periodLabel: "Phase 02",
+            daysLabel: "Weeks 3 - 5",
+            title: "Production Setup & Omnichannel Digital Storefront",
+            goals: [
+              "Equip commercial production kitchen / workshop facility",
+              "Deploy Next.js / Shopify web storefront with WhatsApp bot",
+              "Connect Razorpay/UPI payment gateway and automated order alerts",
+            ],
+            deliverable: "Fully operational pilot production facility with live online checkout",
+          },
+          {
+            week: 3,
+            periodLabel: "Phase 03",
+            daysLabel: "Weeks 6 - 8",
+            title: "Sampling, Corporate Tie-Ups & Closed Beta Pilot",
+            goals: [
+              "Distribute 250 curated sample units to target buyer personas",
+              "Sign 3 corporate cafeteria or boutique retail placement accounts",
+              "Launch Instagram pre-order waitlist campaign with early-bird perks",
+            ],
+            deliverable: "75+ confirmed pre-orders and 3 signed B2B commercial distribution agreements",
+          },
+          {
+            week: 4,
+            periodLabel: "Phase 04",
+            daysLabel: "Weeks 9 - 12",
+            title: "Commercial Public Launch & Operational Scaling",
+            goals: [
+              "Execute coordinated public launch across target metropolitan hubs",
+              "Fulfill first 500 customer orders with personalized feedback cards",
+              "Achieve unit-positive gross margins and establish 35%+ repeat rate",
+            ],
+            deliverable: "Live commercial operations generating ₹3,50,000+ monthly revenue with strong repeat traction",
+          },
+        ],
+      }
+    : {
+        mvpName: `${idea.name} Full Beta Platform`,
+        timelineWeeks: 10,
+        timeframe: profile.timeframe || "1-3 Months Full Beta",
+        coreValueProposition: "A robust, production-grade SaaS beta platform with automated multi-tenant onboarding, usage-based billing, enterprise analytics, and high-availability cloud architecture.",
+        featureBacklog: {
+          mustHave: [
+            "Multi-tenant role-based workspace with team member invites",
+            "Automated AI data pipeline with semantic caching & fallback models",
+            "Self-serve Stripe billing integration (subscriptions & metered usage)",
+            "Interactive analytics dashboard with automated PDF/CSV reporting",
+          ],
+          shouldHave: [
+            "Developer API keys & webhook trigger subscriptions",
+            "Detailed audit logs & exportable compliance reports",
+            "Custom domain white-labeling & theme customization",
+            "Automated email notifications via Resend",
+          ],
+          couldHave: [
+            "Multi-region data residency compliance toggle",
+            "Bi-directional CRM & Slack integration",
+            "Custom enterprise SSO / SAML integration",
+          ],
+        },
+        recommendedStack: {
+          frontend: "Next.js 14 App Router, Tailwind CSS, Lucide Icons, Recharts",
+          backend: "Next.js Edge Route Handlers + AWS Lambda Serverless Workers",
+          database: "PostgreSQL (Aurora Serverless / Supabase) with pgvector",
+          aiModel: "Google Gemini 1.5 Flash + Claude 3.5 Sonnet hybrid fallback",
+          lowCodeAccelerators: [
+            "Clerk / NextAuth for instant secure authentication",
+            "Stripe Elements for rapid payment flow",
+            "Upstash Redis for sub-millisecond semantic caching",
+            "Resend API for transactional user notifications",
+          ],
+        },
+        fourWeekSprintPlan: [
+          {
+            week: 1,
+            periodLabel: "Phase 01",
+            daysLabel: "Weeks 1 - 2",
+            title: "Architecture Foundation & Multi-Tenant Setup",
+            goals: [
+              "Configure PostgreSQL schema with pgvector & multi-tenant isolation",
+              "Implement Clerk/NextAuth secure authentication & team workspaces",
+              "Build mock API data ingestion adapters and CI/CD pipelines",
+            ],
+            deliverable: "Deployable staging backend with functioning authentication and test suites",
+          },
+          {
+            week: 2,
+            periodLabel: "Phase 02",
+            daysLabel: "Weeks 3 - 5",
+            title: "Core AI Engine & Workflow Automation Pipeline",
+            goals: [
+              "Integrate Gemini 1.5 Flash + Claude 3.5 Sonnet fallback engine",
+              "Implement Redis semantic caching for sub-millisecond responses",
+              "Construct primary workflow automation and user dashboard views",
+            ],
+            deliverable: "Functional core platform delivering end-to-end user workflows with < 800ms latency",
+          },
+          {
+            week: 3,
+            periodLabel: "Phase 03",
+            daysLabel: "Weeks 6 - 8",
+            title: "Self-Serve Billing, Analytics & Closed Beta Testing",
+            goals: [
+              "Connect Stripe subscription billing tiers and metered credits",
+              "Build interactive analytics charts and automated report exports",
+              "Onboard 15 closed-beta design partners and collect telemetry",
+            ],
+            deliverable: "Complete end-to-end user journey with automated payments and 15 active beta teams",
+          },
+          {
+            week: 4,
+            periodLabel: "Phase 04",
+            daysLabel: "Weeks 9 - 12",
+            title: "Security Hardening, Performance Tuning & Public Launch",
+            goals: [
+              "Execute security penetration testing and rate-limiting guardrails",
+              "Deploy global CDN edge caching and automated uptime monitoring",
+              "Public launch on Product Hunt, HackerNews, and targeted founder channels",
+            ],
+            deliverable: "Public production release with live telemetry, automated billing, and first 50 paying customers",
+          },
+        ],
+      };
+
+  const businessRoadmap: BusinessRoadmap = {
+    phases: [
+      {
+        phase: 1,
+        title: isNonTech ? "Beta Launch & Community Traction" : "Full Beta Launch & Initial Traction",
+        timeframe: "Months 1 - 3",
+        milestones: isNonTech
+          ? [
+              "Launch flagship beta storefront / batch production facility",
+              "Acquire first 350 paying retail & direct subscription customers",
+              "Attain 45%+ monthly repeat purchase rate",
+              "Partner with 8 regional retailers / corporate accounts",
+            ]
+          : [
+              "Complete 20 problem validation interviews with target buyers",
+              "Ship production-ready beta platform with automated billing",
+              "Collect first 10 signed Letters of Intent (LOIs) or paid pilots",
+              "Launch public waitlist reaching 1,000+ signups",
+            ],
+        keyMetrics: isNonTech ? "350 Customers · 45% Repeat Rate · ₹5,00,000 Sales" : "10 LOIs · 45% conversion · < 600ms API latency",
+        fundingGoal: "Bootstrapped / ₹20L - ₹40L Angel Pre-Seed",
+        status: "Active",
+      },
+      {
+        phase: 2,
+        title: isNonTech ? "Multi-Hub Expansion & Subscriptions" : "Monetization & Retention Scale",
+        timeframe: "Months 4 - 6",
+        milestones: isNonTech
+          ? [
+              "Open second neighborhood hub / expand production capacity 3x",
+              "Launch automated doorstep subscription replenishment club",
+              "Reach ₹15,00,000 in monthly gross revenue",
+              "Optimize unit cost of goods sold (COGS) by 18%",
+            ]
+          : [
+              "Onboard 100 active beta companies",
+              "Achieve weekly retention rate above 65%",
+              "Reach first $10,000 in Monthly Recurring Revenue (MRR)",
+              "Optimize infrastructure unit costs by 30%",
+            ],
+        keyMetrics: isNonTech ? "₹15L Monthly Revenue · 62% Gross Margin" : "$10k MRR · 65% WAU/MAU · NPS 68+",
+        fundingGoal: "₹75L - ₹1.5 Crore Pre-Series A / Angel Round",
+        status: "Upcoming",
+      },
+      {
+        phase: 3,
+        title: isNonTech ? "Regional Scale & B2B Distribution" : "Product-Market Fit & Market Expansion",
+        timeframe: "Months 7 - 9",
+        milestones: isNonTech
+          ? [
+              "Scale to 10 retail locations and 60+ retail shelf partners",
+              "Launch corporate catering / institutional supply contracts",
+              "Cross ₹40,00,000 monthly run-rate with positive operating cashflow",
+            ]
+          : [
+              "Scale to 350 paying SMB & Mid-Market customers",
+              "Launch developer API marketplace & webhooks",
+              "Achieve $35,000+ MRR with negative net revenue churn",
+            ],
+        keyMetrics: isNonTech ? "₹40L Monthly Revenue · 68% Product Margin" : "$35k MRR ($420k ARR) · < 2% Churn · 11x LTV:CAC",
+        fundingGoal: "₹2.5 Crore - ₹5 Crore Growth Round",
+        status: "Planned",
+      },
+      {
+        phase: 4,
+        title: isNonTech ? "National Brand & Franchise Rollout" : "Enterprise Expansion & Institutional Scale",
+        timeframe: "Months 10 - 12",
+        milestones: isNonTech
+          ? [
+              "Launch asset-light franchise expansion across Tier-1 metros",
+              "Expand direct-to-consumer nationwide e-commerce shipping",
+              "Cross ₹1.2 Crore monthly gross revenue",
+            ]
+          : [
+              "Introduce Enterprise Tier with SOC2 & dedicated VPC",
+              "Expand sales channels into European & Asian-Pacific corridors",
+              "Cross $100,000+ MRR ($1.2M ARR)",
+            ],
+        keyMetrics: isNonTech ? "₹1.2 Cr Monthly Run-Rate · 30+ Network Locations" : "$100k MRR · 10 Enterprise Contracts · 85% Gross Margin",
+        fundingGoal: "$2.5M - $5.0M Series A",
+        status: "Planned",
+      },
+    ],
+  };
+
+  return { mvpRecommendation, businessRoadmap };
+}
+
 function generateIntelligentFeasibility(
   idea: StartupIdea,
   validation: MarketValidation,
@@ -1770,257 +2528,12 @@ function generateIntelligentFeasibility(
         score: executionScore,
         weight: 15,
         impact: "Positive",
-        rationale: "4-week rapid sprint roadmap utilizing low-code accelerators and pre-built operational modules enables quick time-to-market."
+        rationale: `${profile.timeframe || "Rapid"} execution roadmap utilizing low-code accelerators and pre-built operational modules enables quick time-to-market.`
       }
     ]
   };
 
-  const mvpRecommendation: MVPRecommendation = isNonTech
-    ? {
-        mvpName: `${idea.name} Pilot Launch MVP`,
-        timelineWeeks: 4,
-        coreValueProposition: "A focused commercial pilot: batch production run / flagship studio delivering certified quality, delightful customer experience, and verified unit profitability.",
-        featureBacklog: {
-          mustHave: [
-            "Direct supplier contracts & certified batch ingredient sourcing",
-            "Commercial prototype production / pilot kitchen setup",
-            "Point of Sale (POS) & WhatsApp automated ordering channel",
-            "Initial batch tasting & customer feedback iteration loop"
-          ],
-          shouldHave: [
-            "Automated customer loyalty & repeat purchase rewards",
-            "Eco-friendly branded packaging with tamper-proof seals",
-            "Integrated delivery dispatch (Dunzo/Shiprocket/local courier)",
-            "Weekly inventory & wastage tracking dashboard"
-          ],
-          couldHave: [
-            "Monthly doorstep subscription club replenishment",
-            "Corporate bulk gifting & wholesale retail shelf packages",
-            "Standardized franchise SOP operations manual"
-          ]
-        },
-        recommendedStack: {
-          frontend: "Next.js 14 Web Storefront / Shopify Headless + Tailwind CSS",
-          backend: "Automated Inventory & POS Operations + WhatsApp Business API",
-          database: "PostgreSQL (Supabase) + Local POS Offline Cache",
-          aiModel: "Demand Forecasting & Automated Inventory Replenishment Heuristics",
-          lowCodeAccelerators: [
-            "Razorpay / Stripe for multi-currency payment checkout",
-            "Shiprocket / Local Logistics API for express delivery",
-            "WhatsApp Business API for automated order updates",
-            "Zoho / Tally Cloud for GST invoice compliance"
-          ]
-        },
-        fourWeekSprintPlan: [
-          {
-            week: 1,
-            title: "Sourcing, Formulation & Compliance",
-            goals: [
-              "Secure verified local farm/supplier ingredient contracts",
-              "Obtain trade and health safety compliance permits",
-              "Finalize initial batch recipes/specifications and test samples"
-            ],
-            deliverable: "Approved product formula/specs with verified supplier agreements and packaging designs"
-          },
-          {
-            week: 2,
-            title: "Pilot Production & Digital Storefront",
-            goals: [
-              "Setup commercial pilot kitchen/production workshop",
-              "Deploy modern Next.js/Shopify web ordering page & WhatsApp bot",
-              "Connect Razorpay/Stripe checkout and automated order alerts"
-            ],
-            deliverable: "Operational pilot production facility with functioning online ordering and payment flow"
-          },
-          {
-            week: 3,
-            title: "Sampling, Presales & Partner Placement",
-            goals: [
-              "Distribute 100 sample units to target buyer personas",
-              "Launch pre-order waitlist campaign on Instagram/local catchments",
-              "Finalize 3 local boutique retail shelf or corporate cafeteria tie-ups"
-            ],
-            deliverable: "50+ pre-orders collected and 3 signed retail partner distribution letters"
-          },
-          {
-            week: 4,
-            title: "Commercial Launch & Operations Hardening",
-            goals: [
-              "Execute public launch across target neighborhood hubs",
-              "Deliver first 150 customer orders with feedback survey cards",
-              "Measure unit economics, customer repeat rate, and kitchen throughput"
-            ],
-            deliverable: "Live commercial operations with first ₹1,00,000+ in sales and 40%+ repeat customer intent"
-          }
-        ]
-      }
-    : {
-        mvpName: `${idea.name} Core Pilot MVP`,
-        timelineWeeks: 4,
-        coreValueProposition: "A streamlined, self-serve automated solution solving the primary acute bottleneck with sub-second execution and zero configuration friction.",
-        featureBacklog: {
-          mustHave: [
-            "Automated API onboarding & instant credential verification",
-            "Core AI inference and heuristic anomaly analysis pipeline",
-            "Interactive results dashboard with exportable summary metrics",
-            "Role-based multi-tenant authentication & team workspace"
-          ],
-          shouldHave: [
-            "Automated email & webhook notification triggers",
-            "Usage-based billing meter integration via Stripe Elements",
-            "Detailed audit log with historical data export",
-            "Custom threshold alert configurations"
-          ],
-          couldHave: [
-            "Custom white-label domain branding",
-            "Multi-region data residency compliance toggle",
-            "Bi-directional bi-weekly CRM/Slack sync integration"
-          ]
-        },
-        recommendedStack: {
-          frontend: "Next.js 14 App Router, Tailwind CSS, Lucide Icons, Recharts",
-          backend: "Next.js Edge Route Handlers + AWS Lambda Serverless Workers",
-          database: "PostgreSQL (Aurora Serverless / Supabase) with pgvector",
-          aiModel: "Google Gemini 1.5 Flash + Claude 3.5 Sonnet hybrid fallback",
-          lowCodeAccelerators: [
-            "Clerk / NextAuth for instant secure authentication",
-            "Stripe Elements for rapid payment flow",
-            "Upstash Redis for sub-millisecond semantic caching",
-            "Resend API for transactional user notifications"
-          ]
-        },
-        fourWeekSprintPlan: [
-          {
-            week: 1,
-            title: "Architecture & Data Ingestion Setup",
-            goals: [
-              "Configure PostgreSQL schema & vector index",
-              "Implement user authentication & tenant isolation",
-              "Build mock API ingestion adapters"
-            ],
-            deliverable: "Deployable staging backend with functioning authentication and mock data pipeline"
-          },
-          {
-            week: 2,
-            title: "Core AI Engine & Processing Loop",
-            goals: [
-              "Wire Google Gemini API inference engine",
-              "Implement caching & rate-limiting middleware",
-              "Construct automated verification heuristics"
-            ],
-            deliverable: "Functional API endpoint that returns verified results in under 800ms"
-          },
-          {
-            week: 3,
-            title: "Dashboard UI & Self-Serve Billing",
-            goals: [
-              "Build reactive analytics dashboard with charts",
-              "Connect Stripe subscription checkout tiers",
-              "Implement CSV / PDF export engine"
-            ],
-            deliverable: "Complete end-to-end user journey from signup to payment and report generation"
-          },
-          {
-            week: 4,
-            title: "Testing, Hardening & Beta Launch",
-            goals: [
-              "Execute load testing and prompt injection defense tests",
-              "Conduct 5 live beta user onboarding sessions",
-              "Public launch on Product Hunt, HackerNews & Twitter/X"
-            ],
-            deliverable: "Public production release with live telemetry and first 25 paying pilot accounts"
-          }
-        ]
-      };
-
-  const businessRoadmap: BusinessRoadmap = {
-    phases: [
-      {
-        phase: 1,
-        title: isNonTech ? "Pilot Launch & Community Traction" : "Validation & Rapid MVP Launch",
-        timeframe: "Months 1 - 2",
-        milestones: isNonTech
-          ? [
-              "Launch flagship pilot location / batch production",
-              "Acquire first 250 paying retail & direct customers",
-              "Attain 45%+ monthly repeat purchase rate",
-              "Partner with 5 regional retailers / corporate accounts"
-            ]
-          : [
-              "Complete 15 problem validation interviews with target buyers",
-              "Ship 4-week functional MVP to staging",
-              "Collect first 5 signed Letters of Intent (LOIs)",
-              "Launch public waitlist with 500+ signups"
-            ],
-        keyMetrics: isNonTech ? "250 Customers · 45% Repeat Rate · ₹3,50,000 Sales" : "15 LOIs · 40% waitlist conversion · < 800ms API latency",
-        fundingGoal: "Bootstrapped / ₹10L - ₹25L Angel Pre-Seed",
-        status: "Active"
-      },
-      {
-        phase: 2,
-        title: isNonTech ? "Multi-Hub Expansion & Subscriptions" : "Closed Beta & Initial Traction",
-        timeframe: "Months 3 - 5",
-        milestones: isNonTech
-          ? [
-              "Open second neighborhood hub / expand production capacity 3x",
-              "Launch automated doorstep subscription replenishment club",
-              "Reach ₹12,00,000 in monthly gross revenue",
-              "Optimize unit cost of goods sold (COGS) by 18%"
-            ]
-          : [
-              "Onboard 50 active beta companies",
-              "Achieve weekly retention rate above 60%",
-              "Launch self-serve Stripe billing integration",
-              "Reach first $5,000 in Monthly Recurring Revenue (MRR)"
-            ],
-        keyMetrics: isNonTech ? "₹12L Monthly Revenue · 60% Gross Margin" : "$5k MRR · 60% WAU/MAU · Net Promoter Score 65+",
-        fundingGoal: "₹50L - ₹1 Crore Pre-Series A / Angel Round",
-        status: "Upcoming"
-      },
-      {
-        phase: 3,
-        title: isNonTech ? "Regional Scale & B2B Distribution" : "Product-Market Fit & Monetization Scale",
-        timeframe: "Months 6 - 9",
-        milestones: isNonTech
-          ? [
-              "Scale to 8-10 retail locations and 50+ retail shelf partners",
-              "Launch corporate catering / institutional supply contracts",
-              "Cross ₹35,00,000 monthly run-rate with positive operating cashflow",
-              "Hire centralized operations & quality assurance managers"
-            ]
-          : [
-              "Scale to 250 paying SMB & Mid-Market customers",
-              "Launch developer API marketplace & webhooks",
-              "Achieve $25,000+ MRR with negative net revenue churn",
-              "Hire first 2 senior full-stack & AI engineers"
-            ],
-        keyMetrics: isNonTech ? "₹35L Monthly Revenue · 68% Product Margin" : "$25k MRR ($300k ARR) · < 2% Monthly Churn · 11x LTV:CAC",
-        fundingGoal: "₹2 Crore - ₹5 Crore Growth Round",
-        status: "Planned"
-      },
-      {
-        phase: 4,
-        title: isNonTech ? "National Brand & Franchise Rollout" : "Market Expansion & Enterprise Scale",
-        timeframe: "Months 10 - 12",
-        milestones: isNonTech
-          ? [
-              "Launch asset-light franchise expansion across Tier-1 metros",
-              "Expand direct-to-consumer nationwide e-commerce shipping",
-              "Cross ₹1 Crore monthly gross revenue",
-              "Prepare institutional growth equity round"
-            ]
-          : [
-              "Introduce Enterprise Tier with SOC2 & dedicated VPC",
-              "Expand sales channels into European & Asian-Pacific corridors",
-              "Cross $75,000+ MRR ($900k ARR)",
-              "Prepare Series A institutional venture financing"
-            ],
-        keyMetrics: isNonTech ? "₹1 Cr Monthly Run-Rate · 25+ Network Locations" : "$75k MRR · 5 Enterprise Annual Contracts · 85% Gross Margin",
-        fundingGoal: "$2.0M - $5.0M Series A",
-        status: "Planned"
-      }
-    ]
-  };
+  const { mvpRecommendation, businessRoadmap } = buildMvpAndRoadmap(idea, profile, isNonTech);
 
   return {
     overallScore,

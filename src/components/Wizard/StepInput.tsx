@@ -22,6 +22,8 @@ import {
   Cpu,
   Check,
   HardHat,
+  Mail,
+  HelpCircle,
 } from "lucide-react";
 import { FounderProfile, MapLocation, StartupIdea } from "@/types";
 import { GLOBAL_STARTUP_HUBS, DEFAULT_LOCATION } from "@/lib/location-data";
@@ -31,6 +33,8 @@ interface StepInputProps {
   onDirectValidateIdea?: (idea: StartupIdea, profile: FounderProfile) => void;
   isLoading: boolean;
   initialProfile?: FounderProfile;
+  defaultEmail?: string;
+  onOpenHelp?: () => void;
 }
 
 const BUDGET_PRESETS = [
@@ -146,8 +150,8 @@ const INDUSTRY_CATEGORIES = [
     businessType: "Retail & Storefront",
     badge: "Stores & Experiences",
     icon: Store,
-    color: "hover:border-purple-500/50 hover:bg-purple-500/5",
-    activeColor: "border-purple-500 bg-purple-500/10 text-purple-300",
+    color: "hover:border-teal-500/50 hover:bg-teal-500/5",
+    activeColor: "border-teal-500 bg-teal-500/10 text-teal-300",
     exampleProblem: "Zero-waste packaging-free bulk grocery and natural detergent refill dispensary stores",
     skills: "Retail Merchandising & Community Building",
     audience: "Urban Apartment Dwellers & Zero-Waste Families",
@@ -211,7 +215,14 @@ export const StepInput: React.FC<StepInputProps> = ({
   onDirectValidateIdea,
   isLoading,
   initialProfile,
+  defaultEmail,
+  onOpenHelp,
 }) => {
+  // Founder's Email / Gmail
+  const [founderEmail, setFounderEmail] = useState<string>(
+    initialProfile?.founderEmail || defaultEmail || ""
+  );
+
   // Selected category preset (empty by default)
   const [selectedCategory, setSelectedCategory] = useState<string>("");
 
@@ -317,6 +328,7 @@ export const StepInput: React.FC<StepInputProps> = ({
       timeframe: timeframe.trim() || "1-3 Months Full Beta",
       customContext: customContext.trim(),
       targetLocation: targetLocation || DEFAULT_LOCATION,
+      founderEmail: founderEmail.trim() || undefined,
     };
 
     onGenerate(profile);
@@ -346,6 +358,7 @@ export const StepInput: React.FC<StepInputProps> = ({
       timeframe: timeframe.trim() || "1-3 Months Full Beta",
       customContext: customContext.trim(),
       targetLocation: targetLocation || DEFAULT_LOCATION,
+      founderEmail: founderEmail.trim() || undefined,
     };
 
     const finalName = startupName.trim() || `${domains[0] || "NextGen"} Venture`;
@@ -381,9 +394,20 @@ export const StepInput: React.FC<StepInputProps> = ({
     <div className="w-full max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Neat, Clean Header */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-emerald-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold shadow-sm">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-blue-500/15 to-emerald-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
           <span>Step 1 of 6: Founder Profile, Location Map &amp; Venture Vision</span>
+          {onOpenHelp && (
+            <button
+              type="button"
+              onClick={onOpenHelp}
+              className="ml-2 pl-2 border-l border-indigo-500/40 text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-bold text-[11px] transition"
+              title="Open 14-Stage Platform Help & Founder Support"
+            >
+              <HelpCircle className="w-3 h-3" />
+              <span>Need Help?</span>
+            </button>
+          )}
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
           Launch &amp; Validate Any <span className="gradient-text">Startup Concept</span>
@@ -486,13 +510,13 @@ export const StepInput: React.FC<StepInputProps> = ({
           {/* Business Model / Type */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <Store className="w-3.5 h-3.5 text-purple-400" />
+              <Store className="w-3.5 h-3.5 text-indigo-400" />
               Business Model Type *
             </label>
             <select
               value={businessType}
               onChange={(e) => setBusinessType(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-100 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition shadow-inner cursor-pointer"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition shadow-inner cursor-pointer"
             >
               <option value="" disabled className="text-slate-500">
                 Select business model type...
@@ -533,7 +557,7 @@ export const StepInput: React.FC<StepInputProps> = ({
               <option value="Tech & Software" className="bg-slate-950 text-slate-200">
                 💻 Tech, Software &amp; AI (Artificial Intelligence)
               </option>
-              <option value="Others" className="bg-slate-950 text-purple-300 font-semibold">
+              <option value="Others" className="bg-slate-950 text-indigo-300 font-semibold">
                 ✨ Others / Custom Business Model
               </option>
             </select>
@@ -544,7 +568,7 @@ export const StepInput: React.FC<StepInputProps> = ({
                   value={customBusinessType}
                   onChange={(e) => setCustomBusinessType(e.target.value)}
                   placeholder="Specify custom model (e.g. Media &amp; Publishing, Agency, Franchise, Real Estate, Consulting)..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-purple-950/20 border border-purple-500/50 text-xs text-purple-200 placeholder-purple-400/50 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 transition font-medium"
+                  className="w-full px-4 py-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/50 text-xs text-indigo-200 placeholder-indigo-400/50 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition font-medium"
                 />
               </div>
             )}
@@ -571,7 +595,7 @@ export const StepInput: React.FC<StepInputProps> = ({
           {/* Target Customer Segment */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-purple-400" />
+              <Users className="w-3.5 h-3.5 text-cyan-400" />
               Target Customer Segment *
             </label>
             <input
@@ -580,13 +604,35 @@ export const StepInput: React.FC<StepInputProps> = ({
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
               placeholder="e.g. Urban Professionals, Homeowners, Gym-Goers, FPOs (Farmer Producer Organizations)"
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition shadow-inner"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition shadow-inner"
             />
             <span className="text-[10px] text-slate-500">Primary buyer persona</span>
           </div>
 
-          {/* Launch Timeframe */}
+          {/* Founder's Email / Gmail */}
           <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                Founder&apos;s Email / Gmail
+              </span>
+              <span className="text-[10px] text-emerald-400/80 font-mono">For Dossier &amp; Alerts</span>
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                value={founderEmail}
+                onChange={(e) => setFounderEmail(e.target.value)}
+                placeholder="founder@gmail.com"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition shadow-inner"
+              />
+              <Mail className="w-4 h-4 text-emerald-400/60 absolute left-3 top-2.5 pointer-events-none" />
+            </div>
+            <span className="text-[10px] text-slate-500">Associated with your 14-stage validation dossier</span>
+          </div>
+
+          {/* Launch Timeframe */}
+          <div className="space-y-1.5 sm:col-span-2">
             <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-pink-400" />
               MVP (Minimum Viable Product) Launch Timeframe *
@@ -738,7 +784,7 @@ export const StepInput: React.FC<StepInputProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs sm:text-sm shadow-xl shadow-indigo-600/30 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2.5 disabled:opacity-50"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 hover:from-indigo-500 hover:to-blue-500 text-white font-semibold text-xs sm:text-sm shadow-xl shadow-indigo-600/25 border border-indigo-400/30 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? (
               <>

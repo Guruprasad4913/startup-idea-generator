@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   TrendingUp,
   Globe,
@@ -30,6 +30,16 @@ import {
   Layers,
   Flame,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell,
+} from "recharts";
 import { StartupIdea, MarketValidation } from "@/types";
 
 interface StepMarketValidationProps {
@@ -50,6 +60,7 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
   const [activeTab, setActiveTab] = useState<"market" | "competitors" | "users">("market");
   const [showJargonGuide, setShowJargonGuide] = useState(false);
   const [competitorFilter, setCompetitorFilter] = useState<"all" | "Direct" | "Indirect">("all");
+  const [battlecardView, setBattlecardView] = useState<"both" | "chart" | "table">("both");
 
   const {
     competitorComparisonMatrix,
@@ -109,7 +120,7 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
             type="button"
             onClick={onNext}
             disabled={isEvaluatingCloud}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 border border-indigo-400/30 transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             {isEvaluatingCloud ? (
               <>
@@ -128,7 +139,7 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
 
       {/* Beginner-Friendly Jargon Buster / Plain English Dictionary (Collapsible) */}
       {showJargonGuide && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-purple-950/70 border border-indigo-500/40 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 border border-indigo-500/40 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm">
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -184,8 +195,8 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-              <span className="font-bold text-purple-300 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> Innovation Moat (Defensibility)
+              <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Innovation Moat (Defensibility)
               </span>
               <p className="text-slate-300 text-[11px]">
                 Your unfair strategic advantage (proprietary AI, workflow lock-in, data network) that prevents competitors from copying you.
@@ -226,12 +237,12 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
         </div>
 
         {/* Card 3: Top Competitor & Edge */}
-        <div className="p-4 rounded-2xl glass-panel border border-purple-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950/20 space-y-2">
-          <div className="flex items-center justify-between text-xs text-purple-400 font-semibold">
+        <div className="p-4 rounded-2xl glass-panel border border-cyan-500/30 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/20 space-y-2">
+          <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold">
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Your Unfair Moat
             </span>
-            <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">Moat</span>
+            <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Moat</span>
           </div>
           <div className="text-sm font-bold text-white line-clamp-2">
             {idea.innovationMoat || validation.competitors[0]?.ourDifferentiation || "AI & Cloud Architecture"}
@@ -617,7 +628,7 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
       {activeTab === "competitors" && (
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* Top Unfair Moat Highlight Banner */}
-          <div className="p-5 rounded-2xl glass-panel border border-indigo-500/40 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-purple-950/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl glass-panel border border-indigo-500/40 bg-gradient-to-r from-indigo-950/50 via-slate-900 to-indigo-950/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
                 <ShieldCheck className="w-6 h-6" />
@@ -739,77 +750,219 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
             </div>
           </div>
 
-          {/* Competitor Feature Comparison Matrix (Battlecard) */}
-          {competitorComparisonMatrix && (
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-emerald-400" />
-                    Product Capability &amp; Architecture Comparison Battlecard
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Feature-by-feature proof demonstrating why your technology stack outpaces competitors.
-                  </p>
-                </div>
-                <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                  ✨ 100% Core Moat Advantage
-                </span>
-              </div>
+          {/* Competitor Feature Comparison Matrix (Battlecard) & Visual Comparison Chart */}
+          {competitorComparisonMatrix && (() => {
+            const totalFeatures = competitorComparisonMatrix.features.length || 1;
+            const competitorChartData = [
+              {
+                name: `${idea.name} (Our Product)`,
+                coverage: 100,
+                supportedCount: totalFeatures,
+                total: totalFeatures,
+                isOurProduct: true,
+                color: "#10b981",
+              },
+              ...competitorComparisonMatrix.competitors.map((c, cIdx) => {
+                let count = 0;
+                competitorComparisonMatrix.features.forEach((feat) => {
+                  const val = c.scores[feat];
+                  if (val === true) count += 1;
+                  else if (typeof val === "string" && val.toLowerCase() !== "false" && val.toLowerCase() !== "no") count += 0.5;
+                });
+                const pct = Math.min(100, Math.round((count / totalFeatures) * 100));
+                const colors = ["#6366f1", "#06b6d4", "#f59e0b", "#ec4899"];
+                return {
+                  name: c.name.split("(")[0].trim(),
+                  coverage: pct,
+                  supportedCount: Math.round(count * 10) / 10,
+                  total: totalFeatures,
+                  isOurProduct: false,
+                  color: colors[cIdx % colors.length],
+                };
+              }),
+            ];
 
-              <div className="overflow-x-auto rounded-xl border border-indigo-500/30 bg-slate-950/80 shadow-xl">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Key Capability / Architecture</th>
-                      <th className="px-4 py-3 font-bold text-emerald-400 bg-emerald-500/10 border-x border-emerald-500/20">
-                        {idea.name} (Our Product)
-                      </th>
-                      {competitorComparisonMatrix.competitors.map((c, i) => (
-                        <th key={i} className="px-4 py-3 font-semibold text-slate-400">
-                          {c.name.split("(")[0].trim()}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/70 text-slate-300">
-                    {competitorComparisonMatrix.features.map((feat, fIdx) => (
-                      <tr key={fIdx} className="hover:bg-slate-900/40 transition">
-                        <td className="px-4 py-3 font-medium text-white">{feat}</td>
-                        <td className="px-4 py-3 font-bold text-emerald-400 bg-emerald-500/5 border-x border-emerald-500/15">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">
-                            <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" /> Native Support
-                          </span>
-                        </td>
-                        {competitorComparisonMatrix.competitors.map((c, cIdx) => {
-                          const val = c.scores[feat];
-                          return (
-                            <td key={cIdx} className="px-4 py-3 text-slate-400">
-                              {typeof val === "boolean" ? (
-                                val ? (
-                                  <span className="inline-flex items-center text-emerald-400 gap-1 font-semibold">
-                                    <Check className="w-3.5 h-3.5" /> Yes
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center text-rose-400 gap-1 font-semibold">
-                                    <X className="w-3.5 h-3.5" /> No
-                                  </span>
-                                )
-                              ) : (
-                                <span className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
-                                  {val}
-                                </span>
-                              )}
+            return (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-emerald-400" />
+                      Product Capability &amp; Architecture Comparison Battlecard
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Visual comparison chart and feature-by-feature proof demonstrating your technology moat.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="bg-slate-900 border border-slate-800 p-0.5 rounded-xl flex items-center gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setBattlecardView("both")}
+                        className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                          battlecardView === "both"
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Both
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBattlecardView("chart")}
+                        className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer ${
+                          battlecardView === "chart"
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <BarChart3 className="w-3 h-3 text-cyan-400" />
+                        <span>Moat Chart</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBattlecardView("table")}
+                        className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                          battlecardView === "table"
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        Matrix Table
+                      </button>
+                    </div>
+
+                    <span className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                      ✨ 100% Core Moat Advantage
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual Competitive Capability Moat Chart */}
+                {(battlecardView === "both" || battlecardView === "chart") && (
+                  <div className="p-5 rounded-2xl bg-gradient-to-b from-[#181a28] to-[#12131d] border border-indigo-500/30 shadow-xl space-y-3 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-indigo-500 to-cyan-400" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-cyan-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">
+                          Competitive Capability Coverage &amp; Moat Index
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-cyan-300 font-mono bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                        Coverage % (Native Capabilities)
+                      </span>
+                    </div>
+
+                    <div className="h-56 w-full pt-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={competitorChartData}
+                          layout="vertical"
+                          margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                          <XAxis
+                            type="number"
+                            domain={[0, 100]}
+                            stroke="#64748b"
+                            tickFormatter={(v) => `${v}%`}
+                            tick={{ fill: "#94a3b8", fontSize: 11 }}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="name"
+                            stroke="#64748b"
+                            width={160}
+                            tick={{ fill: "#cbd5e1", fontSize: 11 }}
+                          />
+                          <Tooltip
+                            formatter={(val: any, _name: any, item: any) => [
+                              `${val}% (${item.payload.supportedCount}/${item.payload.total} capabilities supported)`,
+                              "Native Architecture Advantage",
+                            ]}
+                            contentStyle={{
+                              backgroundColor: "#0f172a",
+                              borderColor: "#3b82f6",
+                              borderRadius: "0.75rem",
+                              fontSize: "12px",
+                              color: "#fff",
+                            }}
+                          />
+                          <Bar dataKey="coverage" radius={[0, 8, 8, 0]} maxBarSize={28}>
+                            {competitorChartData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={entry.color}
+                                stroke={entry.isOurProduct ? "#34d399" : undefined}
+                                strokeWidth={entry.isOurProduct ? 2 : 0}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* Table Matrix */}
+                {(battlecardView === "both" || battlecardView === "table") && (
+                  <div className="overflow-x-auto rounded-xl border border-indigo-500/30 bg-slate-950/80 shadow-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">Key Capability / Architecture</th>
+                          <th className="px-4 py-3 font-bold text-emerald-400 bg-emerald-500/10 border-x border-emerald-500/20">
+                            {idea.name} (Our Product)
+                          </th>
+                          {competitorComparisonMatrix.competitors.map((c, i) => (
+                            <th key={i} className="px-4 py-3 font-semibold text-slate-400">
+                              {c.name.split("(")[0].trim()}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/70 text-slate-300">
+                        {competitorComparisonMatrix.features.map((feat, fIdx) => (
+                          <tr key={fIdx} className="hover:bg-slate-900/40 transition">
+                            <td className="px-4 py-3 font-medium text-white">{feat}</td>
+                            <td className="px-4 py-3 font-bold text-emerald-400 bg-emerald-500/5 border-x border-emerald-500/15">
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">
+                                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" /> Native Support
+                              </span>
                             </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            {competitorComparisonMatrix.competitors.map((c, cIdx) => {
+                              const val = c.scores[feat];
+                              return (
+                                <td key={cIdx} className="px-4 py-3 text-slate-400">
+                                  {typeof val === "boolean" ? (
+                                    val ? (
+                                      <span className="inline-flex items-center text-emerald-400 gap-1 font-semibold">
+                                        <Check className="w-3.5 h-3.5" /> Yes
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center text-rose-400 gap-1 font-semibold">
+                                        <X className="w-3.5 h-3.5" /> No
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                                      {val}
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Tab Navigation Footer Helper */}
           <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
@@ -1059,7 +1212,7 @@ export const StepMarketValidation: React.FC<StepMarketValidationProps> = ({
               type="button"
               onClick={onNext}
               disabled={isEvaluatingCloud}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/25 border border-indigo-400/30 transition flex items-center gap-2 cursor-pointer"
             >
               <span>Ready! Proceed to Cloud Feasibility &amp; Scoring</span>
               <ArrowRight className="w-4 h-4" />

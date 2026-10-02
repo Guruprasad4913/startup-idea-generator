@@ -124,25 +124,25 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-purple-500/40 rounded-3xl shadow-2xl p-6 sm:p-8 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-6 sm:p-8 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Glow Header */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-emerald-400" />
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-indigo-500 to-emerald-400" />
 
         {/* Modal Top Bar */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+            <div className="p-2.5 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-white">Administrator Command Center</h2>
-                <span className="text-[10px] uppercase font-bold bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded-full border border-purple-500/40">
+                <span className="text-[10px] uppercase font-bold bg-amber-500/15 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   Superuser
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Logged in as: <span className="text-purple-300 font-semibold">{currentUser?.username || "Admin"}</span> · MongoDB Database: <span className="font-mono text-emerald-400">startupgen</span>
+                Logged in as: <span className="text-amber-300 font-semibold">{currentUser?.username || "Admin"}</span> · MongoDB Database: <span className="font-mono text-emerald-400">startupgen</span>
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
               title="Refresh Admin Data"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-purple-400" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
             </button>
             <button
               onClick={onClose}
@@ -172,7 +172,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               <div className="text-xs text-slate-400 font-medium">Registered Users</div>
               <div className="text-2xl font-bold text-white">{stats?.totalUsers ?? usersList.length}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <Users className="w-5 h-5" />
             </div>
           </div>
@@ -207,9 +207,9 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
         <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-4">
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "users"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -219,9 +219,9 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
           <button
             onClick={() => setActiveTab("projects")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "projects"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -231,9 +231,9 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
 
           <button
             onClick={() => setActiveTab("telemetry")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeTab === "telemetry"
-                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -270,7 +270,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                     {usersList.map((u) => (
                       <tr key={u.id || u.username} className="hover:bg-slate-800/40 transition">
                         <td className="p-3 font-semibold text-white flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs border border-purple-500/30">
+                          <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs border border-amber-500/30">
                             {u.username.substring(0, 1).toUpperCase()}
                           </div>
                           <div>
@@ -283,7 +283,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                           <span
                             className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                               u.role === "admin"
-                                ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                                 : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                             }`}
                           >
@@ -327,7 +327,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                   {savedProjects.map((p) => (
                     <div
                       key={p.id}
-                      className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-purple-500/40 transition space-y-2.5"
+                      className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-indigo-500/40 transition space-y-2.5"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-white">{p.selectedIdea.name}</span>
@@ -346,7 +346,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
                               onSelectProject(p);
                               onClose();
                             }}
-                            className="text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1"
+                            className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer"
                           >
                             <span>Inspect Report</span>
                             <ExternalLink className="w-3 h-3" />

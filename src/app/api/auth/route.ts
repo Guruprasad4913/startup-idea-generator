@@ -21,9 +21,18 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (cleanPassword.length < 4) {
+      const hasMinLength = cleanPassword.length >= 8;
+      const hasUpper = /[A-Z]/.test(cleanPassword);
+      const hasNumber = /[0-9]/.test(cleanPassword);
+      const hasSpecial = /[^A-Za-z0-9]/.test(cleanPassword);
+
+      if (!hasMinLength || !hasUpper || !hasNumber || !hasSpecial) {
         return NextResponse.json(
-          { success: false, error: "Password must be at least 4 characters." },
+          {
+            success: false,
+            error:
+              "Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 number, and 1 special character.",
+          },
           { status: 400 }
         );
       }
@@ -52,6 +61,7 @@ export async function POST(req: NextRequest) {
           role: cleanUsername.toLowerCase() === "admin" ? "admin" : "user",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          isNewUser: true,
         };
 
         await usersCol.insertOne({
@@ -63,6 +73,7 @@ export async function POST(req: NextRequest) {
           success: true,
           message: "Account created successfully!",
           user: newUser,
+          isNewUser: true,
         });
       } catch (dbErr: any) {
         // Fallback in-memory/local simulation if DB is unreachable
@@ -73,12 +84,14 @@ export async function POST(req: NextRequest) {
           name: cleanName,
           role: cleanUsername.toLowerCase() === "admin" ? "admin" : "user",
           createdAt: new Date().toISOString(),
+          isNewUser: true,
         };
 
         return NextResponse.json({
           success: true,
           message: "Account created (Local mode)",
           user: fallbackUser,
+          isNewUser: true,
         });
       }
     }
@@ -95,23 +108,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Hardcoded quick fallback credentials for instant demo resiliency
-      if (identifier.toLowerCase() === "admin" && cleanPassword === "admin") {
-        const adminUser: User = {
-          id: "usr-admin-01",
-          username: "admin",
-          name: "System Administrator",
-          email: "admin@startupgen.ai",
-          role: "admin",
-          createdAt: new Date().toISOString(),
-        };
-        return NextResponse.json({
-          success: true,
-          message: "Admin authentication successful",
-          user: adminUser,
-        });
-      }
-
       if (
         (identifier.toLowerCase() === "guruprasad" || identifier.toLowerCase() === "guru") &&
         (cleanPassword === "Guru@4913" || cleanPassword === "admin" || cleanPassword === "password")
@@ -123,11 +119,13 @@ export async function POST(req: NextRequest) {
           email: "guruprasad@startupgen.ai",
           role: "user",
           createdAt: new Date().toISOString(),
+          isNewUser: false,
         };
         return NextResponse.json({
           success: true,
           message: "Login successful",
           user: standardUser,
+          isNewUser: false,
         });
       }
 
@@ -136,6 +134,7 @@ export async function POST(req: NextRequest) {
         const userDoc = await usersCol.findOne({
           $or: [{ username: identifier }, { email: identifier.toLowerCase() }],
           password: cleanPassword,
+          role: { $ne: "admin" },
         });
 
         if (!userDoc) {
@@ -152,12 +151,14 @@ export async function POST(req: NextRequest) {
           email: userDoc.email,
           role: userDoc.role || "user",
           createdAt: userDoc.createdAt,
+          isNewUser: false,
         };
 
         return NextResponse.json({
           success: true,
           message: "Login successful",
           user: authenticatedUser,
+          isNewUser: false,
         });
       } catch (dbErr: any) {
         return NextResponse.json(

@@ -22,6 +22,7 @@ export interface FounderProfile {
   timeframe: string;
   customContext?: string;
   targetLocation?: MapLocation;
+  founderEmail?: string;
 }
 
 export interface StartupIdea {
@@ -147,6 +148,7 @@ export interface ScoringEngineBreakdown {
 export interface MVPRecommendation {
   mvpName: string;
   timelineWeeks: number;
+  timeframe?: string;
   coreValueProposition: string;
   featureBacklog: {
     mustHave: string[];
@@ -163,6 +165,8 @@ export interface MVPRecommendation {
   fourWeekSprintPlan: Array<{
     week: number;
     title: string;
+    periodLabel?: string;
+    daysLabel?: string;
     goals: string[];
     deliverable: string;
   }>;
@@ -268,6 +272,7 @@ export interface User {
   role: "admin" | "user";
   createdAt?: string;
   updatedAt?: string;
+  isNewUser?: boolean;
 }
 
 export interface AuthSession {

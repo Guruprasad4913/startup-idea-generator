@@ -23,7 +23,21 @@ import {
   RefreshCw,
   Target,
   Briefcase,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Activity,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Cell,
+} from "recharts";
 import { User, StartupProject } from "@/types";
 import { deleteProjectFromVault, exportProjectAsMarkdown } from "@/lib/storage";
 
@@ -48,6 +62,25 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
   const [selectedDomainFilter, setSelectedDomainFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "highestScore" | "highestTam">("newest");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showPortfolioChart, setShowPortfolioChart] = useState(true);
+
+  // Portfolio comparison data for comparative bar chart
+  const portfolioComparisonData = useMemo(() => {
+    return projects.slice(0, 8).map((p, idx) => {
+      const palette = ["#06b6d4", "#6366f1", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#3b82f6"];
+      const score = p.feasibility?.overallScore || 0;
+      const ltvCac = parseFloat(p.feasibility?.revenueModel?.keyUnitEconomics?.ltvCacRatio?.replace(/[^0-9.]/g, "") || "0") || 0;
+      return {
+        name: p.selectedIdea?.name?.split(" ")[0]?.substring(0, 12) || `Concept ${idx + 1}`,
+        fullName: p.selectedIdea?.name || `Startup ${idx + 1}`,
+        domain: p.selectedIdea?.domain || "Technology",
+        viabilityScore: score,
+        ltvCacRatio: ltvCac,
+        color: palette[idx % palette.length],
+        project: p,
+      };
+    });
+  }, [projects]);
 
   // Compute domains list for filter pills
   const availableDomains = useMemo(() => {
@@ -154,7 +187,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
     if (confirm("Are you sure you want to delete this validated startup report? This cannot be undone.")) {
       setDeletingId(id);
       try {
-        await deleteProjectFromVault(id);
+        await deleteProjectFromVault(id, currentUser);
         if (onRefreshData) onRefreshData();
       } finally {
         setDeletingId(null);
@@ -177,28 +210,36 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Top Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950/60 via-slate-900/90 to-purple-950/60 border border-indigo-500/20 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-indigo-950/30">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#171924] via-[#1a1d2e] to-[#161a26] border border-indigo-500/25 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-indigo-950/30">
+        {/* Radiant top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 via-emerald-400 to-indigo-500" />
+        
+        {/* Colorful ambient glows */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-blue-500/[0.12] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 w-72 h-72 bg-emerald-500/[0.10] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-0 -ml-16 w-60 h-60 bg-cyan-500/[0.08] rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
+          <div className="space-y-2.5 max-w-2xl">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-blue-500/20">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                 Founder Workspace
               </span>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1">
-                <Database className="w-3 h-3 text-emerald-400" />
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
+                <Database className="w-3.5 h-3.5 text-emerald-400" />
                 MongoDB Cloud Synced
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-emerald-300">{currentUser.username}</span>!
+              {currentUser.isNewUser || projects.length === 0 ? "Welcome, " : "Welcome back, "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400 font-extrabold">{currentUser.name || currentUser.username}</span>!
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Access your institutional startup reports, real-time market sizing, and execution roadmaps. Review previous validations or spin up a new multi-sector concept.
+              {currentUser.isNewUser || projects.length === 0
+                ? "Start your venture journey by generating institutional startup reports, real-time market sizing, and execution roadmaps with our 14-stage AI validation engine."
+                : "Access your institutional startup reports, real-time market sizing, and execution roadmaps. Review previous validations or spin up a new multi-sector concept."}
             </p>
           </div>
 
@@ -207,10 +248,10 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
               <button
                 type="button"
                 onClick={onOpenCompare}
-                className="px-4 py-3 rounded-2xl bg-slate-900/90 text-slate-200 border border-slate-700/80 hover:border-indigo-400 hover:text-white transition flex items-center gap-2 text-sm font-semibold shadow-lg cursor-pointer"
+                className="px-4 py-3 rounded-2xl bg-slate-900/90 text-slate-200 border border-indigo-500/40 hover:border-cyan-400 hover:text-white transition flex items-center gap-2 text-sm font-semibold shadow-lg hover:shadow-indigo-500/20 cursor-pointer"
                 title="Compare Multiple Saved Concepts"
               >
-                <Scale className="w-4 h-4 text-indigo-400" />
+                <Scale className="w-4 h-4 text-cyan-400" />
                 <span>Compare ({projects.length})</span>
               </button>
             )}
@@ -218,7 +259,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
             <button
               type="button"
               onClick={onStartNewValidation}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-bold shadow-xl shadow-indigo-600/30 transition transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:via-indigo-500 hover:to-cyan-400 text-white text-sm font-bold shadow-xl shadow-indigo-600/30 border border-cyan-400/30 transition transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Validate New Startup Concept</span>
@@ -229,81 +270,197 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
 
       {/* KPI Cards Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition shadow-lg">
+        {/* Card 1: Total Saved Reports (Electric Blue / Indigo) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-blue-950/35 via-[#161824] to-[#12131b] border border-blue-500/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-400/60 transition-all shadow-xl shadow-blue-950/20">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400" />
           <div className="flex items-center justify-between text-slate-400 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Saved Reports</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-300/90">Total Saved Reports</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/40 flex items-center justify-center text-blue-400 shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform">
               <FolderHeart className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black text-white">{stats.total}</div>
-          <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-300">{stats.total}</div>
+          <div className="text-xs text-blue-200/80 mt-1.5 flex items-center gap-1.5 font-medium">
+            <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />
             <span>Persisted in Cloud Vault & MongoDB</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition shadow-lg">
+        {/* Card 2: Peak Viability Score (Emerald / Mint) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-emerald-950/35 via-[#151c1a] to-[#121417] border border-emerald-500/30 backdrop-blur-md relative overflow-hidden group hover:border-emerald-400/60 transition-all shadow-xl shadow-emerald-950/20">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
           <div className="flex items-center justify-between text-slate-400 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Peak Viability Score</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300/90">Peak Viability Score</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
               <Award className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-emerald-400">
+            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400">
               {stats.maxScore > 0 ? `${stats.maxScore}/100` : "—"}
             </span>
           </div>
-          <div className="text-xs text-slate-400 mt-1">
-            {stats.maxScore > 0 ? `Rating: ${stats.highestScoreVerdict}` : "Awaiting first validation"}
+          <div className="text-xs text-emerald-300/80 mt-1.5 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{stats.maxScore > 0 ? `Rating: ${stats.highestScoreVerdict}` : "Awaiting first validation"}</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md relative overflow-hidden group hover:border-purple-500/40 transition shadow-lg">
+        {/* Card 3: Top Industry Domain (Amber / Warm Gold) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-amber-950/30 via-[#1c1916] to-[#141315] border border-amber-500/30 backdrop-blur-md relative overflow-hidden group hover:border-amber-400/60 transition-all shadow-xl shadow-amber-950/20">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500" />
           <div className="flex items-center justify-between text-slate-400 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Top Industry Domain</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-300/90">Top Industry Domain</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-white truncate" title={stats.topDomain}>
+          <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-100 to-orange-300 truncate" title={stats.topDomain}>
             {stats.topDomain}
           </div>
-          <div className="text-xs text-slate-400 mt-1">
+          <div className="text-xs text-amber-300/80 mt-1.5 font-medium">
             {availableDomains.length > 0 ? `${availableDomains.length} unique sector(s) validated` : "Multi-sector engine ready"}
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md relative overflow-hidden group hover:border-cyan-500/40 transition shadow-lg">
+        {/* Card 4: Cloud Engine Topologies (Cyan / Teal) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-cyan-950/35 via-[#131b22] to-[#11141a] border border-cyan-500/30 backdrop-blur-md relative overflow-hidden group hover:border-cyan-400/60 transition-all shadow-xl shadow-cyan-950/20">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500" />
           <div className="flex items-center justify-between text-slate-400 mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider">Cloud Engine Topologies</span>
-            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-300/90">Cloud Engine Topologies</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400 shadow-md shadow-cyan-500/20 group-hover:scale-110 transition-transform">
               <Layers className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-cyan-300">AWS / GCP / Azure</div>
-          <div className="text-xs text-slate-400 mt-1">
+          <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 via-teal-200 to-blue-300">AWS / GCP / Azure</div>
+          <div className="text-xs text-cyan-300/80 mt-1.5 font-medium">
             Live Tavily Market API + Gemini 2.5
           </div>
         </div>
       </div>
 
+      {/* Portfolio Comparison Benchmark Chart Card (if 2 or more projects exist) */}
+      {projects.length >= 2 && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-b from-[#181a28] to-[#12131d] border border-indigo-500/25 shadow-xl relative overflow-hidden space-y-4">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 via-cyan-400 to-emerald-400" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  Portfolio Concept Comparison &amp; Viability Benchmarks
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+                  {projects.length} Saved Concepts
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Side-by-side benchmark of algorithmic viability scores and capital efficiency across your saved portfolio.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              {onOpenCompare && (
+                <button
+                  type="button"
+                  onClick={onOpenCompare}
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
+                  title="Open Deep Comparison Modal with Radar & Revenue Ramp"
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  <span>Deep Compare Modal</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowPortfolioChart(!showPortfolioChart)}
+                className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                title={showPortfolioChart ? "Collapse Chart" : "Expand Chart"}
+              >
+                {showPortfolioChart ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {showPortfolioChart && (
+            <div className="space-y-3 pt-1">
+              <div className="h-60 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={portfolioComparisonData} margin={{ top: 15, right: 15, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#64748b"
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="#64748b"
+                      tickFormatter={(val) => `${val}`}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    />
+                    <Tooltip
+                      formatter={(val: any, _name: any, item: any) => [
+                        `${val}/100 Viability (${item.payload.domain} · LTV:CAC ${item.payload.ltvCacRatio}x)`,
+                        item.payload.fullName,
+                      ]}
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        borderColor: "#3b82f6",
+                        borderRadius: "0.75rem",
+                        fontSize: "12px",
+                        color: "#fff",
+                      }}
+                    />
+                    <Bar
+                      dataKey="viabilityScore"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                      onClick={(entry: any) => {
+                        if (entry && entry.project) {
+                          onSelectProject(entry.project);
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {portfolioComparisonData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2 flex-wrap gap-2">
+                <span className="flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                  Click any bar to instantly open that startup concept&apos;s full validation memo.
+                </span>
+                <span className="text-slate-500 font-mono">
+                  Scale: 0 - 100 Viability Score
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search, Domain Filter Pills, and Sort Controls */}
-      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#171924] via-[#161822] to-[#171924] border border-indigo-500/20 backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg shadow-black/20">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search reports by startup name, sector, tagline, or launch city..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+            className="w-full pl-10 pr-12 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700/80 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="text-xs text-slate-400 hover:text-white absolute right-3 top-1/2 -translate-y-1/2"
+              className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 absolute right-3 top-1/2 -translate-y-1/2 bg-cyan-950/50 px-2 py-0.5 rounded-md border border-cyan-500/30"
             >
               Clear
             </button>
@@ -315,7 +472,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
             <select
               value={selectedDomainFilter}
               onChange={(e) => setSelectedDomainFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+              className="px-3 py-2 rounded-xl bg-slate-950 border border-indigo-500/30 text-xs text-indigo-200 focus:outline-none focus:border-cyan-400 cursor-pointer font-medium"
             >
               <option value="all">All Sectors ({projects.length})</option>
               {availableDomains.map((dom) => (
@@ -329,7 +486,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700/80 text-xs text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
           >
             <option value="newest">Sort: Newest First</option>
             <option value="highestScore">Sort: Highest Viability</option>
@@ -340,7 +497,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
             <button
               type="button"
               onClick={onRefreshData}
-              className="p-2 rounded-xl bg-slate-950 border border-slate-700/80 text-slate-400 hover:text-white hover:border-slate-600 transition"
+              className="p-2.5 rounded-xl bg-slate-950 border border-slate-700/80 text-slate-400 hover:text-cyan-400 hover:border-cyan-500/40 transition cursor-pointer"
               title="Refresh Reports from Database"
             >
               <RefreshCw className="w-4 h-4" />
@@ -351,20 +508,20 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
 
       {/* Reports Listing */}
       {filteredAndSortedProjects.length === 0 ? (
-        <div className="p-12 sm:p-16 rounded-3xl bg-slate-900/40 border border-slate-800 text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4 shadow-lg shadow-indigo-500/10">
+        <div className="p-12 sm:p-16 rounded-3xl bg-gradient-to-b from-[#171924]/60 to-[#12131b]/60 border border-indigo-500/20 text-center flex flex-col items-center justify-center shadow-xl">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-blue-500/20 via-indigo-500/20 to-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-400 mb-4 shadow-xl shadow-cyan-500/10">
             <Sparkles className="w-8 h-8" />
           </div>
           {projects.length === 0 ? (
             <>
-              <h3 className="text-lg font-bold text-white">No Validated Reports Yet</h3>
-              <p className="text-sm text-slate-400 max-w-md mt-1.5 mb-6 leading-relaxed">
-                You haven&apos;t generated any startup reports yet. Step through our 14-stage multi-sector validation engine to build your first validation report.
+              <h3 className="text-xl font-bold text-white">No Validated Reports Yet</h3>
+              <p className="text-sm text-slate-300 max-w-md mt-1.5 mb-6 leading-relaxed">
+                You haven&apos;t generated any startup reports yet. Step through our 14-stage multi-sector validation engine to build your first institutional validation report.
               </p>
               <button
                 type="button"
                 onClick={onStartNewValidation}
-                className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-xl shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-bold shadow-xl shadow-indigo-600/30 border border-cyan-400/30 transition flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
               >
                 <Plus className="w-4 h-4" />
                 <span>Launch 14-Stage Validation Engine</span>
@@ -373,7 +530,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
           ) : (
             <>
               <h3 className="text-lg font-bold text-white">No Matching Reports</h3>
-              <p className="text-sm text-slate-400 max-w-md mt-1 mb-4">
+              <p className="text-sm text-slate-300 max-w-md mt-1 mb-4">
                 No startup reports match your search term &quot;{searchTerm}&quot; or chosen sector filter.
               </p>
               <button
@@ -382,7 +539,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                   setSearchTerm("");
                   setSelectedDomainFilter("all");
                 }}
-                className="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-4"
+                className="text-xs font-bold text-cyan-400 hover:text-cyan-300 underline underline-offset-4"
               >
                 Reset Search Filters
               </button>
@@ -402,16 +559,16 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
               <div
                 key={p.id}
                 onClick={() => onSelectProject(p)}
-                className="group relative rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/60 transition-all duration-200 p-5 flex flex-col justify-between shadow-lg hover:shadow-indigo-500/10 cursor-pointer overflow-hidden"
+                className="group relative rounded-2xl bg-gradient-to-b from-[#181a25] to-[#12131c] border border-indigo-500/20 hover:border-cyan-400/60 transition-all duration-300 p-5 flex flex-col justify-between shadow-xl shadow-black/30 hover:shadow-cyan-950/30 cursor-pointer overflow-hidden transform hover:-translate-y-0.5"
               >
-                {/* Top highlight bar */}
+                {/* Top radiant highlight bar */}
                 <div
-                  className={`absolute top-0 left-0 right-0 h-1 ${
+                  className={`absolute top-0 left-0 right-0 h-1.5 ${
                     isHighScore
-                      ? "bg-gradient-to-r from-emerald-400 to-cyan-400"
+                      ? "bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400"
                       : isMediumScore
-                      ? "bg-gradient-to-r from-indigo-400 to-purple-400"
-                      : "bg-gradient-to-r from-amber-400 to-rose-400"
+                      ? "bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400"
+                      : "bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400"
                   }`}
                 />
 
@@ -419,7 +576,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                   {/* Card Header: Badges & Date */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 shadow-sm shadow-blue-500/10">
                         {p.selectedIdea?.domain || "Tech / AI"}
                       </span>
                       {p.founderProfile?.businessType && (
@@ -428,14 +585,14 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                         </span>
                       )}
                       {loc && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-950/50 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-sm shadow-emerald-500/10">
                           <MapPin className="w-2.5 h-2.5 text-emerald-400" />
                           {loc.city}
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                      <Calendar className="w-3 h-3 text-slate-500" />
                       {new Date(p.createdAt).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -446,17 +603,17 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
 
                   {/* Startup Title & Tagline */}
                   <div>
-                    <h2 className="text-lg font-black text-white group-hover:text-indigo-300 transition-colors">
+                    <h2 className="text-lg font-black text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-300 group-hover:to-cyan-300 transition-all">
                       {p.selectedIdea?.name}
                     </h2>
-                    <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-slate-300 mt-1 line-clamp-2 leading-relaxed">
                       {p.selectedIdea?.tagline}
                     </p>
                   </div>
 
                   {/* Metric Chips */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-indigo-500/20">
                       <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
                         <Award className="w-3 h-3 text-emerald-400" />
                         Viability Score
@@ -464,12 +621,12 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-base font-black text-white">{score}/100</span>
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
                             isHighScore
-                              ? "bg-emerald-500/20 text-emerald-300"
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                               : isMediumScore
-                              ? "bg-indigo-500/20 text-indigo-300"
-                              : "bg-amber-500/20 text-amber-300"
+                              ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                              : "bg-amber-500/20 text-amber-300 border-amber-500/40"
                           }`}
                         >
                           {verdict}
@@ -477,12 +634,12 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80">
+                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-cyan-500/20">
                       <div className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
                         <TrendingUp className="w-3 h-3 text-cyan-400" />
                         Market TAM
                       </div>
-                      <div className="text-base font-black text-cyan-300 truncate mt-0.5">
+                      <div className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-blue-300 truncate mt-0.5">
                         {p.validation?.tam?.value || "₹20,000 Cr ($2.4B)"}
                       </div>
                     </div>
@@ -495,7 +652,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
                     <button
                       type="button"
                       onClick={(e) => handleDownloadMarkdown(p, e)}
-                      className="p-2 rounded-xl bg-slate-950 text-slate-400 hover:text-white hover:border-slate-600 border border-slate-800 transition cursor-pointer"
+                      className="p-2 rounded-xl bg-slate-950 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/40 border border-slate-800 transition cursor-pointer"
                       title="Download Markdown Report"
                     >
                       <Download className="w-4 h-4" />
@@ -513,7 +670,7 @@ export const UserReportsDashboard: React.FC<UserReportsDashboardProps> = ({
 
                   <button
                     type="button"
-                    className="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-500 transition text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm group-hover:bg-indigo-600 group-hover:text-white"
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/20 border border-cyan-400/30 transition-all group-hover:scale-105"
                   >
                     <span>Open Full Report</span>
                     <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" />

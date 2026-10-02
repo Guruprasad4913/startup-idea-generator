@@ -1,33 +1,108 @@
-import { StartupProject } from "@/types";
+import { StartupProject, User } from "@/types";
 
-const VAULT_STORAGE_KEY = "startup_validator_cloud_vault_v1";
+const VAULT_STORAGE_KEY_LEGACY = "startup_validator_cloud_vault_v1";
 
-export function getSavedProjects(): StartupProject[] {
+export function getVaultStorageKey(username?: string): string {
+  if (username && username.trim()) {
+    return `startup_validator_vault_user_${username.trim().toLowerCase()}`;
+  }
+  return VAULT_STORAGE_KEY_LEGACY;
+}
+
+export function getSavedProjects(username?: string): StartupProject[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(VAULT_STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
+    const cleanUser = username?.trim().toLowerCase();
+    const userKey = getVaultStorageKey(cleanUser);
+    const raw = localStorage.getItem(userKey);
+
+    let projects: StartupProject[] = [];
+    if (raw) {
+      try {
+        projects = JSON.parse(raw);
+      } catch (err) {
+        console.error("Failed to parse user vault", err);
+      }
+    }
+
+    // If cleanUser is provided, filter strictly to this user
+    if (cleanUser) {
+      // Also check legacy key if user vault is empty, and migrate this user's projects only
+      if (projects.length === 0) {
+        const legacyRaw = localStorage.getItem(VAULT_STORAGE_KEY_LEGACY);
+        if (legacyRaw) {
+          try {
+            const legacyList: StartupProject[] = JSON.parse(legacyRaw);
+            const userOwned = legacyList.filter(
+              (p) => p.username && p.username.toLowerCase().trim() === cleanUser
+            );
+            if (userOwned.length > 0) {
+              localStorage.setItem(userKey, JSON.stringify(userOwned));
+              return userOwned;
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+      return projects.filter(
+        (p) => p.username && p.username.toLowerCase().trim() === cleanUser
+      );
+    }
+
+    return projects;
   } catch (e) {
     console.error("Failed to load saved projects from vault", e);
     return [];
   }
 }
 
-export async function saveProjectToVault(project: StartupProject): Promise<void> {
+export async function saveProjectToVault(
+  project: StartupProject,
+  currentUser?: User | null
+): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    // 1. Instant local persistence
-    const existing = getSavedProjects();
-    const filtered = existing.filter((p) => p.id !== project.id);
-    const updated = [project, ...filtered];
-    localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(updated));
+    // Determine active username/userId
+    let activeUsername = project.username || currentUser?.username;
+    let activeUserId = project.userId || currentUser?.id || currentUser?._id;
 
-    // 2. Persist to MongoDB backend asynchronously
+    // Fallback to localStorage session if not provided in arguments
+    if (!activeUsername) {
+      try {
+        const rawUser = localStorage.getItem("startupgen_auth_user");
+        if (rawUser) {
+          const u = JSON.parse(rawUser);
+          if (u?.username) activeUsername = u.username;
+          if (u?.id || u?._id) activeUserId = u.id || u._id;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const enrichedProject: StartupProject = {
+      ...project,
+      username: activeUsername || "founder",
+      userId: activeUserId || `usr-${activeUsername || "founder"}`,
+    };
+
+    // 1. Instant local persistence in user-scoped key
+    const userKey = getVaultStorageKey(enrichedProject.username);
+    const existing = getSavedProjects(enrichedProject.username);
+    const filtered = existing.filter((p) => p.id !== enrichedProject.id);
+    const updated = [enrichedProject, ...filtered];
+    localStorage.setItem(userKey, JSON.stringify(updated));
+
+    // 2. Persist to MongoDB backend asynchronously with user tagging
     fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project }),
+      body: JSON.stringify({
+        project: enrichedProject,
+        username: enrichedProject.username,
+        userId: enrichedProject.userId,
+      }),
     }).catch((err) => {
       console.warn("MongoDB background sync note:", err?.message || err);
     });
@@ -36,16 +111,58 @@ export async function saveProjectToVault(project: StartupProject): Promise<void>
   }
 }
 
-export async function deleteProjectFromVault(id: string): Promise<void> {
+export async function deleteProjectFromVault(
+  id: string,
+  currentUser?: User | null
+): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    // 1. Instant local removal
-    const existing = getSavedProjects();
-    const updated = existing.filter((p) => p.id !== id);
-    localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(updated));
+    let username = currentUser?.username;
+    let userId = currentUser?.id || currentUser?._id;
+    let role = currentUser?.role || "user";
+
+    if (!username) {
+      try {
+        const rawUser = localStorage.getItem("startupgen_auth_user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          username = parsed.username;
+          userId = parsed.id || parsed._id;
+          role = parsed.role || "user";
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 1. Instant local removal from user key
+    if (username) {
+      const userKey = getVaultStorageKey(username);
+      const existing = getSavedProjects(username);
+      const updated = existing.filter((p) => p.id !== id);
+      localStorage.setItem(userKey, JSON.stringify(updated));
+    }
+
+    // Also remove from legacy key if present
+    const legacyRaw = localStorage.getItem(VAULT_STORAGE_KEY_LEGACY);
+    if (legacyRaw) {
+      try {
+        const legacy = JSON.parse(legacyRaw);
+        const updatedLegacy = legacy.filter((p: StartupProject) => p.id !== id);
+        localStorage.setItem(VAULT_STORAGE_KEY_LEGACY, JSON.stringify(updatedLegacy));
+      } catch (e) {
+        // ignore
+      }
+    }
 
     // 2. Delete from MongoDB backend asynchronously
-    fetch(`/api/projects?id=${encodeURIComponent(id)}`, {
+    const query = new URLSearchParams({
+      id,
+      username: username || "",
+      userId: userId || "",
+      role,
+    });
+    fetch(`/api/projects?${query.toString()}`, {
       method: "DELETE",
     }).catch((err) => {
       console.warn("MongoDB delete sync note:", err?.message || err);
@@ -55,16 +172,38 @@ export async function deleteProjectFromVault(id: string): Promise<void> {
   }
 }
 
-export async function syncVaultWithDatabase(): Promise<StartupProject[]> {
+export async function syncVaultWithDatabase(
+  currentUser?: User | null
+): Promise<StartupProject[]> {
   if (typeof window === "undefined") return [];
   try {
-    const res = await fetch("/api/projects");
-    if (!res.ok) return getSavedProjects();
+    let user = currentUser;
+    if (!user) {
+      try {
+        const raw = localStorage.getItem("startupgen_auth_user");
+        if (raw) {
+          user = JSON.parse(raw);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (!user || (!user.username && user.role !== "admin")) {
+      return [];
+    }
+
+    const params = new URLSearchParams();
+    if (user.username) params.set("username", user.username);
+    if (user.id || user._id) params.set("userId", user.id || user._id || "");
+    if (user.role) params.set("role", user.role);
+
+    const res = await fetch(`/api/projects?${params.toString()}`);
+    if (!res.ok) return getSavedProjects(user.username);
 
     const data = await res.json();
     if (data.success && Array.isArray(data.projects)) {
-      const local = getSavedProjects();
-      // Merge remote and local by id, preferring most recently updated
+      const local = getSavedProjects(user.username);
       const projectMap = new Map<string, StartupProject>();
       local.forEach((p) => projectMap.set(p.id, p));
       data.projects.forEach((p: StartupProject) => projectMap.set(p.id, p));
@@ -73,13 +212,14 @@ export async function syncVaultWithDatabase(): Promise<StartupProject[]> {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(merged));
+      const userKey = getVaultStorageKey(user.username);
+      localStorage.setItem(userKey, JSON.stringify(merged));
       return merged;
     }
   } catch (err) {
     console.warn("Could not sync with MongoDB database, using local cache:", err);
   }
-  return getSavedProjects();
+  return currentUser?.username ? getSavedProjects(currentUser.username) : [];
 }
 
 export function exportProjectAsMarkdown(project: StartupProject): string {
@@ -92,7 +232,7 @@ export function exportProjectAsMarkdown(project: StartupProject): string {
 > **Tagline:** ${selectedIdea.tagline}
 > **Domain:** ${selectedIdea.domain} | **Interests:** ${founderProfile.interests?.join(", ") || "AI & Cloud SaaS"}
 > **Skills:** ${founderProfile.skills.join(", ")} | **Budget:** ${founderProfile.budget}
-> **Launch Ecosystem:** ${loc ? `${loc.city}, ${loc.country} (Ecosystem Score: ${loc.ecosystemScore}/100)` : "Global"}
+> **Founder Email:** ${founderProfile.founderEmail || "Confidential"} | **Launch Ecosystem:** ${loc ? `${loc.city}, ${loc.country} (Ecosystem Score: ${loc.ecosystemScore}/100)` : "Global"}
 > **Startup Viability Score:** **${feasibility.overallScore}/100 (${feasibility.verdict})**
 
 ---
@@ -235,7 +375,7 @@ ${feasibility.scoringEngine.factors
 
 ---
 
-## 8. MVP (Minimum Viable Product) Recommendation & 4-Week Sprint Plan
+## 8. MVP (Minimum Viable Product) Recommendation & Execution Sprint Plan
 ${feasibility.mvpRecommendation ? `
 - **MVP Scope:** ${feasibility.mvpRecommendation.mvpName} (${feasibility.mvpRecommendation.timelineWeeks} Weeks to Launch)
 - **Core Value Proposition:** ${feasibility.mvpRecommendation.coreValueProposition}
@@ -243,11 +383,11 @@ ${feasibility.mvpRecommendation ? `
 ### Must-Have Core Features (P0)
 ${feasibility.mvpRecommendation.featureBacklog.mustHave.map((f) => `- [x] ${f}`).join("\n")}
 
-### 4-Week Rapid Sprint Plan
+### Phased Execution Sprint Plan
 ${feasibility.mvpRecommendation.fourWeekSprintPlan
   .map(
     (s) =>
-      `#### Week ${s.week}: ${s.title}\n- **Deliverable:** ${s.deliverable}\n${s.goals
+      `#### ${s.periodLabel || `Week ${s.week}`}${s.daysLabel ? ` (${s.daysLabel})` : ""}: ${s.title}\n- **Deliverable:** ${s.deliverable}\n${s.goals
         .map((g) => `  - ${g}`)
         .join("\n")}`
   )

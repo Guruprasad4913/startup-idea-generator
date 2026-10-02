@@ -56,7 +56,7 @@ interface AdminDashboardProps {
   onRefreshData: () => void;
 }
 
-const PIE_COLORS = ["#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4"];
+const PIE_COLORS = ["#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#ec4899", "#6366f1"];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
@@ -148,7 +148,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     setIsDeletingId(id);
     try {
-      const res = await fetch(`/api/projects?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`/api/projects?id=${encodeURIComponent(id)}&role=admin`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -203,6 +203,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const demoProject: StartupProject = {
         id: `proj-demo-${Date.now()}`,
         createdAt: new Date().toISOString(),
+        userId: currentUser?.id || currentUser?._id || "usr-admin-master",
+        username: currentUser?.username || "admin",
         founderProfile: {
           domains: ["AI Agents", "Fintech"],
           skills: ["Full-Stack Dev", "Machine Learning"],
@@ -340,7 +342,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoProject),
+        body: JSON.stringify({
+          project: demoProject,
+          username: demoProject.username,
+          userId: demoProject.userId,
+        }),
       });
 
       setStatusMessage("Demo Project successfully created and seeded into MongoDB!");
@@ -452,14 +458,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-300 pb-12">
       {/* Top Superuser Banner */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-purple-500/30 bg-gradient-to-r from-slate-950 via-purple-950/30 to-slate-950 relative overflow-hidden shadow-2xl">
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-amber-500/25 bg-gradient-to-r from-[#1c1916] via-[#1a1c2a] to-[#141b25] relative overflow-hidden shadow-2xl shadow-indigo-950/20">
+        {/* Radiant top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-rose-500 via-indigo-500 to-cyan-400" />
+        
+        {/* Glow accents */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 p-[1px] shadow-lg shadow-purple-500/25 flex-shrink-0">
-              <div className="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center text-purple-400">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-indigo-600 p-[1.5px] shadow-lg shadow-amber-500/20 flex-shrink-0">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400">
                 <ShieldCheck className="w-7 h-7" />
               </div>
             </div>
@@ -468,12 +478,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   Website Admin &amp; Analytics Dashboard
                 </h1>
-                <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-400/40 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm shadow-amber-500/20">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   Superuser Online
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
                 Real-time operational intelligence, user activity telemetry, startup validation matrices, and MongoDB database health.
               </p>
             </div>
@@ -484,26 +494,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={handleTestPing}
               disabled={isPinging}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition text-xs font-medium flex items-center gap-2"
+              className="px-3.5 py-2 rounded-xl bg-slate-900/90 border border-indigo-500/30 text-slate-200 hover:text-cyan-300 hover:border-cyan-400/60 transition text-xs font-medium flex items-center gap-2 cursor-pointer shadow-md"
               title="Test MongoDB & Server Latency"
             >
-              <Activity className={`w-3.5 h-3.5 ${isPinging ? "animate-spin text-purple-400" : "text-emerald-400"}`} />
+              <Activity className={`w-3.5 h-3.5 ${isPinging ? "animate-spin text-amber-400" : "text-emerald-400"}`} />
               <span>Ping: {pingLatency}ms</span>
             </button>
 
             <button
               onClick={loadAdminData}
               disabled={loading}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition"
+              className="p-2 rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-cyan-300 hover:border-cyan-400/60 transition cursor-pointer shadow-md"
               title="Refresh Telemetry"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-purple-400" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
             </button>
 
             {/* Launch Startup Generator View */}
             <button
               onClick={onSwitchToWizard}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 transition flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold shadow-xl shadow-indigo-600/30 border border-cyan-400/30 transition flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
             >
               <Zap className="w-4 h-4" />
               <span>Launch Startup Validator Flow</span>
@@ -512,7 +522,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={onSignOut}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition"
+              className="p-2 rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition cursor-pointer shadow-md"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -523,8 +533,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Status Notice */}
       {statusMessage && (
-        <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between animate-in fade-in duration-200">
-          <div className="flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-teal-950/80 border border-emerald-500/50 text-emerald-300 text-xs flex items-center justify-between shadow-lg shadow-emerald-950/30 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 font-medium">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{statusMessage}</span>
           </div>
@@ -533,119 +543,129 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Real-time KPI Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Registered Users */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/60 hover:border-purple-500/40 transition flex flex-col justify-between space-y-3">
+        {/* Card 1: Registered Users (Blue / Indigo) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-blue-950/35 via-[#161824] to-[#12131b] border border-blue-500/30 backdrop-blur-md relative overflow-hidden group hover:border-blue-400/60 transition-all shadow-xl shadow-blue-950/20 flex flex-col justify-between space-y-3">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Registered Users</span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <span className="text-xs font-bold text-blue-300/90 uppercase tracking-wider">Registered Users</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-400/40 text-blue-400 flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="text-3xl font-black text-white">{stats?.totalUsers ?? usersList.length}</div>
-            <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-0.5">
+            <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-300">
+              {stats?.totalUsers ?? usersList.length}
+            </div>
+            <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-0.5">
               <TrendingUp className="w-3 h-3" /> +100% active
             </span>
           </div>
-          <div className="text-[11px] text-slate-500">Authenticated via MongoDB accounts</div>
+          <div className="text-[11px] text-blue-200/80 font-medium">Authenticated via MongoDB accounts</div>
         </div>
 
-        {/* Card 2: Validated Startup Reports */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/60 hover:border-indigo-500/40 transition flex flex-col justify-between space-y-3">
+        {/* Card 2: Validated Startup Reports (Indigo / Cyan) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-indigo-950/35 via-[#171726] to-[#12131b] border border-indigo-500/30 backdrop-blur-md relative overflow-hidden group hover:border-indigo-400/60 transition-all shadow-xl shadow-indigo-950/20 flex flex-col justify-between space-y-3">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-400" />
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Startup Reports</span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider">Startup Reports</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-400/40 text-indigo-400 flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-110 transition-transform">
               <Layers className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="text-3xl font-black text-indigo-300">{stats?.totalProjects ?? savedProjects.length}</div>
-            <span className="text-[11px] text-purple-400 font-semibold">14-Stage Verified</span>
+            <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-blue-200 to-cyan-300">
+              {stats?.totalProjects ?? savedProjects.length}
+            </div>
+            <span className="text-[11px] text-emerald-400 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">14-Stage Verified</span>
           </div>
-          <div className="text-[11px] text-slate-500">Institutional Reports stored in Vault</div>
+          <div className="text-[11px] text-indigo-200/80 font-medium">Institutional Reports stored in Vault</div>
         </div>
 
-        {/* Card 3: Avg Viability Score */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/60 hover:border-emerald-500/40 transition flex flex-col justify-between space-y-3">
+        {/* Card 3: Avg Viability Score (Emerald / Mint) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-emerald-950/35 via-[#151c1a] to-[#121417] border border-emerald-500/30 backdrop-blur-md relative overflow-hidden group hover:border-emerald-400/60 transition-all shadow-xl shadow-emerald-950/20 flex flex-col justify-between space-y-3">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Viability Score</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-bold text-emerald-300/90 uppercase tracking-wider">Avg Viability Score</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-110 transition-transform">
               <Award className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <div className="text-3xl font-black text-emerald-400">{analyticsData.avgScore}/100</div>
-            <span className="text-[11px] text-emerald-400 font-semibold">Tier-1 Grade</span>
+            <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400">
+              {analyticsData.avgScore}/100
+            </div>
+            <span className="text-[11px] text-emerald-300 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">Tier-1 Grade</span>
           </div>
-          <div className="text-[11px] text-slate-500">TAM, Economics &amp; Cloud Feasibility</div>
+          <div className="text-[11px] text-emerald-200/80 font-medium">TAM, Economics &amp; Cloud Feasibility</div>
         </div>
 
-        {/* Card 4: Database Health */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/60 hover:border-cyan-500/40 transition flex flex-col justify-between space-y-3">
+        {/* Card 4: Database Health (Cyan / Teal) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-cyan-950/35 via-[#131b22] to-[#11141a] border border-cyan-500/30 backdrop-blur-md relative overflow-hidden group hover:border-cyan-400/60 transition-all shadow-xl shadow-cyan-950/20 flex flex-col justify-between space-y-3">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500" />
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">MongoDB Cluster</span>
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <span className="text-xs font-bold text-cyan-300/90 uppercase tracking-wider">MongoDB Cluster</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-400/40 text-cyan-400 flex items-center justify-center shadow-md shadow-cyan-500/20 group-hover:scale-110 transition-transform">
               <Database className="w-4 h-4" />
             </div>
           </div>
           <div>
             <div className="text-sm font-bold text-white flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>startupgen (Port 27017)</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-teal-200 font-bold">startupgen (Port 27017)</span>
             </div>
-            <div className="text-[11px] text-cyan-400 font-mono mt-1">Uptime: 99.98% · Local Cluster</div>
+            <div className="text-[11px] text-cyan-300 font-mono mt-1">Uptime: 99.98% · Local Cluster</div>
           </div>
-          <div className="text-[11px] text-slate-500">Live JSON schemas &amp; Indexes synced</div>
+          <div className="text-[11px] text-cyan-200/80 font-medium">Live JSON schemas &amp; Indexes synced</div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-indigo-500/20 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "overview"
-              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-              : "text-slate-400 hover:text-slate-200 bg-slate-900/60 hover:bg-slate-800/80"
+              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-indigo-600/30 border border-cyan-400/40"
+              : "text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30"
           }`}
         >
-          <BarChart3 className="w-3.5 h-3.5" />
+          <BarChart3 className="w-3.5 h-3.5 text-cyan-300" />
           <span>Website Analysis &amp; Visual Charts</span>
         </button>
 
         <button
           onClick={() => setActiveTab("projects")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "projects"
-              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-              : "text-slate-400 hover:text-slate-200 bg-slate-900/60 hover:bg-slate-800/80"
+              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-indigo-600/30 border border-cyan-400/40"
+              : "text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30"
           }`}
         >
-          <Layers className="w-3.5 h-3.5" />
+          <Layers className="w-3.5 h-3.5 text-indigo-300" />
           <span>Validated Startups Explorer ({savedProjects.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("users")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "users"
-              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-              : "text-slate-400 hover:text-slate-200 bg-slate-900/60 hover:bg-slate-800/80"
+              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-indigo-600/30 border border-cyan-400/40"
+              : "text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30"
           }`}
         >
-          <Users className="w-3.5 h-3.5" />
+          <Users className="w-3.5 h-3.5 text-blue-300" />
           <span>User Accounts Management ({usersList.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab("system")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "system"
-              ? "bg-purple-600 text-white shadow-lg shadow-purple-600/30"
-              : "text-slate-400 hover:text-slate-200 bg-slate-900/60 hover:bg-slate-800/80"
+              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-indigo-600/30 border border-cyan-400/40"
+              : "text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30"
           }`}
         >
-          <Cpu className="w-3.5 h-3.5" />
+          <Cpu className="w-3.5 h-3.5 text-emerald-300" />
           <span>Telemetry &amp; Database Diagnostics</span>
         </button>
       </div>
@@ -656,16 +676,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Charts Row 1: Validations Timeline & Domain Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Chart 1: Platform Validations Timeline */}
-            <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+            <div className="lg:col-span-2 glass-panel p-6 rounded-3xl border border-indigo-500/25 bg-gradient-to-b from-[#181a28] to-[#12131d] space-y-4 shadow-xl shadow-indigo-950/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400" />
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-purple-400" />
+                    <Activity className="w-4 h-4 text-cyan-400" />
                     Website Validation Volume &amp; Activity Timeline
                   </h3>
-                  <p className="text-xs text-slate-400">Daily startup validations, AI concept synthesis, and registered users</p>
+                  <p className="text-xs text-slate-300">Daily startup validations, AI concept synthesis, and registered users</p>
                 </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800">
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded-md bg-slate-950/80 text-cyan-300 border border-cyan-500/30">
                   Last 7 Days
                 </span>
               </div>
@@ -674,12 +695,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={analyticsData.timelineData}>
                     <defs>
-                      <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.0} />
+                      <linearGradient id="indigoGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
                       </linearGradient>
                       <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
@@ -688,8 +709,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#0f172a",
-                        borderColor: "#334155",
+                        backgroundColor: "#16171c",
+                        borderColor: "#3b82f6",
                         borderRadius: "0.75rem",
                         fontSize: "12px",
                       }}
@@ -698,10 +719,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       type="monotone"
                       dataKey="validations"
                       name="Reports Generated"
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
+                      stroke="#3b82f6"
+                      strokeWidth={2.5}
                       fillOpacity={1}
-                      fill="url(#purpleGradient)"
+                      fill="url(#indigoGradient)"
                     />
                     <Area
                       type="monotone"
@@ -718,13 +739,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             {/* Chart 2: Target Domain Breakdown */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+            <div className="glass-panel p-6 rounded-3xl border border-cyan-500/25 bg-gradient-to-b from-[#181a28] to-[#12131d] space-y-4 shadow-xl shadow-cyan-950/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500" />
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <PieIcon className="w-4 h-4 text-indigo-400" />
+                  <PieIcon className="w-4 h-4 text-cyan-400" />
                   Target Domain Distribution
                 </h3>
-                <p className="text-xs text-slate-400">Industry breakdown of created startup concepts</p>
+                <p className="text-xs text-slate-300">Industry breakdown of created startup concepts</p>
               </div>
 
               <div className="h-56 w-full flex items-center justify-center">
@@ -745,8 +767,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#0f172a",
-                        borderColor: "#334155",
+                        backgroundColor: "#16171c",
+                        borderColor: "#06b6d4",
                         borderRadius: "0.75rem",
                         fontSize: "11px",
                       }}
@@ -766,14 +788,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           {/* Charts Row 2: Regional Ecosystem & Feasibility Breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Chart 3: Regional Geographic Hubs */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+            <div className="glass-panel p-6 rounded-3xl border border-amber-500/25 bg-gradient-to-b from-[#1a1816] to-[#131215] space-y-4 shadow-xl shadow-amber-950/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Globe2 className="w-4 h-4 text-amber-400" />
                     Target Geographic Ecosystems
                   </h3>
-                  <p className="text-xs text-slate-400">Founder preferences for primary startup launch markets</p>
+                  <p className="text-xs text-slate-300">Founder preferences for primary startup launch markets</p>
                 </div>
               </div>
 
@@ -785,59 +808,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#0f172a",
-                        borderColor: "#334155",
+                        backgroundColor: "#16171c",
+                        borderColor: "#f59e0b",
                         borderRadius: "0.75rem",
                         fontSize: "12px",
                       }}
                     />
-                    <Bar dataKey="count" name="Targeted Startups" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" name="Targeted Startups" fill="#f59e0b" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
             {/* Quick Operational Status Cards */}
-            <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4 flex flex-col justify-between">
+            <div className="glass-panel p-6 rounded-3xl border border-emerald-500/25 bg-gradient-to-b from-[#151c19] to-[#121417] space-y-4 flex flex-col justify-between shadow-xl shadow-emerald-950/20 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-emerald-400" />
                   Real-Time Platform Architecture &amp; Engine
                 </h3>
-                <p className="text-xs text-slate-400">Underlying backend microservices &amp; database pipelines</p>
+                <p className="text-xs text-slate-300">Underlying backend microservices &amp; database pipelines</p>
               </div>
 
               <div className="space-y-2.5 text-xs">
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="font-semibold text-slate-200">LLM Inference Engine</span>
                   </div>
-                  <span className="text-emerald-400 font-mono">Gemini 1.5 Flash (Operational)</span>
+                  <span className="text-emerald-400 font-mono font-medium">Gemini 1.5 Flash (Operational)</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-slate-950/90 border border-cyan-500/20 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                     <span className="font-semibold text-slate-200">Currency Denomination</span>
                   </div>
-                  <span className="text-cyan-400 font-mono">Indian Rupees (INR / ₹)</span>
+                  <span className="text-cyan-400 font-mono font-medium">Indian Rupees (INR / ₹)</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     <span className="font-semibold text-slate-200">MongoDB Persistence</span>
                   </div>
-                  <span className="text-purple-400 font-mono">startupgen (Port 27017)</span>
+                  <span className="text-emerald-400 font-mono font-medium">startupgen (Port 27017)</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-xl bg-slate-950/90 border border-amber-500/20 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                     <span className="font-semibold text-slate-200">Cloud Feasibility Algorithm</span>
                   </div>
-                  <span className="text-amber-400 font-mono">14-Stage Heuristics</span>
+                  <span className="text-amber-400 font-mono font-medium">14-Stage Heuristics</span>
                 </div>
               </div>
 
@@ -845,7 +869,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span className="text-[11px] text-slate-400">Need sample validation data?</span>
                 <button
                   onClick={handleSeedDemoData}
-                  className="px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/60 text-xs font-semibold transition"
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/80 hover:text-white text-xs font-semibold transition cursor-pointer"
                 >
                   + Seed Demo Startup
                 </button>
@@ -857,33 +881,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 2: VALIDATED STARTUPS EXPLORER */}
       {activeTab === "projects" && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+        <div className="glass-panel p-6 rounded-3xl border border-indigo-500/25 bg-gradient-to-b from-[#181a28] to-[#12131d] space-y-4 shadow-xl shadow-indigo-950/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400" />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-purple-400" />
+                <Layers className="w-4 h-4 text-cyan-400" />
                 Validated Startups &amp; Reports Repository
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-300">
                 All startup ideas generated and analyzed across the website. Click any row to inspect the full 14-stage report.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   placeholder="Search by name or domain..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 w-56"
+                  className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-indigo-500/30 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400 w-56"
                 />
               </div>
 
               <button
                 onClick={handleSeedDemoData}
-                className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
               >
                 + Seed Project
               </button>
@@ -899,7 +924,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </p>
               <button
                 onClick={handleSeedDemoData}
-                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition cursor-pointer"
               >
                 Seed Instant Demo Startup Project
               </button>
@@ -932,12 +957,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <td className="px-4 py-3">
                           <div className="font-bold text-white flex items-center gap-1.5">
                             <span>{p.selectedIdea.name}</span>
-                            <ExternalLink className="w-3 h-3 text-purple-400 opacity-60" />
+                            <ExternalLink className="w-3 h-3 text-indigo-400 opacity-60" />
                           </div>
                           <div className="text-[11px] text-slate-400 truncate max-w-xs">{p.selectedIdea.tagline}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/30 text-[11px] font-medium">
+                          <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 text-[11px] font-medium">
                             {p.selectedIdea.domain}
                           </span>
                         </td>
@@ -997,26 +1022,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* TAB 3: USER ACCOUNTS MANAGEMENT */}
       {activeTab === "users" && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+        <div className="glass-panel p-6 rounded-3xl border border-blue-500/25 bg-gradient-to-b from-[#181a28] to-[#12131d] space-y-4 shadow-xl shadow-blue-950/20 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400" />
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-400" />
+                <Users className="w-4 h-4 text-cyan-400" />
                 Registered User Accounts
               </h3>
-              <p className="text-xs text-slate-400">All registered founder and administrator credentials in MongoDB</p>
+              <p className="text-xs text-slate-300">All registered founder and administrator credentials in MongoDB</p>
             </div>
             <button
               onClick={loadAdminData}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-300 hover:text-cyan-300 hover:border-cyan-400/50 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <RefreshCw className="w-3 h-3" /> Refresh Users
+              <RefreshCw className="w-3 h-3 text-cyan-400" /> Refresh Users
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-2xl border border-indigo-500/20">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <thead className="bg-slate-950/90 text-slate-400 uppercase font-semibold border-b border-indigo-500/20">
                 <tr>
                   <th className="px-4 py-3">User Profile</th>
                   <th className="px-4 py-3">Role</th>
@@ -1030,19 +1056,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   const isAdmin = u.role === "admin" || u.username === "admin";
 
                   return (
-                    <tr key={u.id || u.username} className="hover:bg-slate-800/30 transition">
+                    <tr key={u.id || u.username} className="hover:bg-slate-800/40 transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <div
                             className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
-                              isAdmin ? "bg-purple-600 text-white" : "bg-indigo-600 text-white"
+                              isAdmin ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm" : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm"
                             }`}
                           >
                             {u.name?.charAt(0) || u.username.charAt(0)}
                           </div>
                           <div>
                             <div className="font-bold text-white">{u.name || u.username}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">@{u.username}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">@{u.username}</div>
                           </div>
                         </div>
                       </td>
@@ -1050,15 +1076,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                             isAdmin
-                              ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
                               : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
                           }`}
                         >
                           {isAdmin ? "Admin" : "Founder"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-400 font-mono text-[11px]">{u.email}</td>
-                      <td className="px-4 py-3 text-slate-500 text-[11px] font-mono">
+                      <td className="px-4 py-3 text-slate-300 font-mono text-[11px]">{u.email}</td>
+                      <td className="px-4 py-3 text-slate-400 text-[11px] font-mono">
                         {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Active"}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -1066,13 +1092,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteUser(u)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 transition"
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 transition cursor-pointer"
                             title="Delete User from MongoDB"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <span className="text-[10px] text-purple-400 font-mono">Protected</span>
+                          <span className="text-[10px] text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">Protected</span>
                         )}
                       </td>
                     </tr>
@@ -1087,32 +1113,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* TAB 4: TELEMETRY & DATABASE */}
       {activeTab === "system" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+          <div className="glass-panel p-6 rounded-3xl border border-emerald-500/25 bg-gradient-to-b from-[#151c19] to-[#121417] space-y-4 shadow-xl shadow-emerald-950/20 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Database className="w-4 h-4 text-emerald-400" />
               MongoDB Cluster Telemetry
             </h3>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Database Name</span>
-                <span className="font-mono text-white font-bold">{stats?.database || "startupgen"}</span>
+              <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-slate-300 font-medium">Database Name</span>
+                <span className="font-mono text-emerald-300 font-bold">{stats?.database || "startupgen"}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Host Connection</span>
+              <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-slate-300 font-medium">Host Connection</span>
                 <span className="font-mono text-emerald-400">mongodb://127.0.0.1:27017</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Collection: users</span>
-                <span className="font-mono text-purple-300">{stats?.totalUsers ?? usersList.length} documents</span>
+              <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-slate-300 font-medium">Collection: users</span>
+                <span className="font-mono text-cyan-300 font-bold">{stats?.totalUsers ?? usersList.length} documents</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Collection: projects</span>
-                <span className="font-mono text-purple-300">{stats?.totalProjects ?? savedProjects.length} documents</span>
+              <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-slate-300 font-medium">Collection: projects</span>
+                <span className="font-mono text-cyan-300 font-bold">{stats?.totalProjects ?? savedProjects.length} documents</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Response Latency</span>
-                <span className="font-mono text-emerald-400">{pingLatency} ms</span>
+              <div className="p-3 rounded-xl bg-slate-950/90 border border-emerald-500/20 flex items-center justify-between">
+                <span className="text-slate-300 font-medium">Response Latency</span>
+                <span className="font-mono text-emerald-400 font-bold">{pingLatency} ms</span>
               </div>
             </div>
 
@@ -1120,17 +1147,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <button
                 onClick={handleTestPing}
                 disabled={isPinging}
-                className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-950/30"
               >
-                <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                <Activity className="w-3.5 h-3.5" />
                 <span>Test Live Ping</span>
               </button>
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/60 space-y-4">
+          <div className="glass-panel p-6 rounded-3xl border border-cyan-500/25 bg-gradient-to-b from-[#131b22] to-[#11141a] space-y-4 shadow-xl shadow-cyan-950/20 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500" />
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-purple-400" />
+              <Cpu className="w-4 h-4 text-cyan-400" />
               Website Operational Controls
             </h3>
 
@@ -1142,7 +1170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <button
                   onClick={handleSeedDemoData}
-                  className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold transition"
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition cursor-pointer"
                 >
                   Seed Data
                 </button>

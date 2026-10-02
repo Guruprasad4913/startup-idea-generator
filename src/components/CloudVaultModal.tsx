@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import { X, Trash2, ExternalLink, Download, Sparkles, TrendingUp, ShieldAlert, Award, Scale, Database } from "lucide-react";
-import { StartupProject } from "@/types";
+import { StartupProject, User } from "@/types";
 import { deleteProjectFromVault, exportProjectAsMarkdown } from "@/lib/storage";
 
 interface CloudVaultModalProps {
   isOpen: boolean;
   onClose: () => void;
   projects: StartupProject[];
+  currentUser?: User | null;
   onSelectProject: (p: StartupProject) => void;
   onProjectDeleted: () => void;
   onOpenCompare?: () => void;
@@ -18,6 +19,7 @@ export const CloudVaultModal: React.FC<CloudVaultModalProps> = ({
   isOpen,
   onClose,
   projects,
+  currentUser,
   onSelectProject,
   onProjectDeleted,
   onOpenCompare,
@@ -36,7 +38,7 @@ export const CloudVaultModal: React.FC<CloudVaultModalProps> = ({
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Delete this validated startup report from your Cloud Vault?")) {
-      deleteProjectFromVault(id);
+      deleteProjectFromVault(id, currentUser);
       onProjectDeleted();
     }
   };

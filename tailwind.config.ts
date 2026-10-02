@@ -12,6 +12,29 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        slate: {
+          50: "#f7f8fa",
+          100: "#eef0f4",
+          200: "#d9dce4",
+          300: "#b8bdcb",
+          400: "#9197a8",
+          500: "#6d7384",
+          600: "#4f5564",
+          700: "#363a45",
+          750: "#2b2f38",
+          800: "#21232b",
+          850: "#1a1c22",
+          900: "#16171c",
+          950: "#111215",
+        },
+        charcoal: {
+          base: "#121316",
+          surface: "#16171c",
+          elevated: "#1c1e24",
+          border: "#252731",
+          hover: "#2e313d",
+          muted: "#9197a8",
+        },
         brand: {
           50: "#eef2ff",
           100: "#e0e7ff",
@@ -34,7 +57,7 @@ const config: Config = {
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'grid-pattern': "radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
+        'grid-pattern': "radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px)",
       }
     },
   },
